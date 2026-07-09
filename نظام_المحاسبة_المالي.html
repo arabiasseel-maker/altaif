@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>النظام المالي التنفيذي | شركة الطيف الأولى</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --surface-2:#f7f9fc; --border:#e2e8f0;
+  --text:#1a2233; --text-2:#5b6577; --muted:#8a94a6;
+  --primary:#1f6feb; --primary-2:#0d47a1; --accent:#c9a227;
+  --green:#1b9e5a; --green-bg:#e6f7ee; --red:#d64545; --red-bg:#fdeaea;
+  --amber:#e0a92e; --amber-bg:#fdf5e2; --purple:#7c4dff;
+  --shadow:0 2px 8px rgba(20,30,60,.06),0 8px 24px rgba(20,30,60,.05);
+  --shadow-lg:0 8px 40px rgba(20,30,60,.14);
+  --radius:16px; --radius-sm:10px;
+  --sidebar:280px;
+}
+[data-theme="dark"]{
+  --bg:#0c1018; --surface:#141a24; --surface-2:#1b2431; --border:#26303f;
+  --text:#e7edf5; --text-2:#a8b3c4; --muted:#6f7d90;
+  --primary:#4d90fe; --primary-2:#7cb0ff; --accent:#e6c35c;
+  --green:#33c37d; --green-bg:#0f2a1e; --red:#f06565; --red-bg:#2c1618;
+  --amber:#f0be4a; --amber-bg:#2b2410; --purple:#9d7bff;
+  --shadow:0 2px 8px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg:0 10px 44px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Tajawal','Cairo',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;transition:background .3s,color .3s}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+h1,h2,h3,h4{font-family:'Cairo',sans-serif;font-weight:700;line-height:1.3}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+a{color:var(--primary);text-decoration:none}
+.hidden{display:none!important}
+
+/* ===== Login ===== */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d1f3c,#1f6feb 120%);z-index:1000;padding:20px}
+.login-card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow-lg);width:100%;max-width:420px;padding:42px 38px;text-align:center;animation:pop .4s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.login-logo{width:76px;height:76px;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px;color:#fff;box-shadow:0 8px 24px rgba(31,111,235,.4)}
+.login-card h1{font-size:23px;margin-bottom:4px}
+.login-card p{color:var(--text-2);margin-bottom:26px;font-size:14px}
+.field{text-align:right;margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-2)}
+.field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface-2);color:var(--text);transition:border .2s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary)}
+.btn{border:none;border-radius:12px;padding:12px 20px;font-weight:700;font-size:14px;background:var(--primary);color:#fff;transition:transform .12s,box-shadow .2s,background .2s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(31,111,235,.35)}
+.btn:active{transform:translateY(0)}
+.btn.block{width:100%}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1.5px solid var(--border)}
+.btn.ghost:hover{box-shadow:var(--shadow)}
+.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.amber{background:var(--amber);color:#3a2e05}
+.btn.sm{padding:7px 12px;font-size:12.5px;border-radius:9px}
+.login-hint{margin-top:18px;font-size:12px;color:var(--muted)}
+
+/* ===== Layout ===== */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar);background:var(--surface);border-left:1px solid var(--border);position:fixed;top:0;right:0;bottom:0;overflow-y:auto;z-index:50;transition:transform .3s}
+.brand{padding:20px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2}
+.brand .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex-shrink:0}
+.brand b{font-family:'Cairo';font-size:16px;display:block}
+.brand span{font-size:11.5px;color:var(--muted)}
+.nav-group{padding:8px 12px}
+.nav-group .gt{font-size:11px;font-weight:700;color:var(--muted);padding:12px 12px 6px;letter-spacing:.3px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:11px;color:var(--text-2);font-weight:600;font-size:13.5px;cursor:pointer;transition:.15s;margin-bottom:2px}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:linear-gradient(90deg,rgba(31,111,235,.14),transparent);color:var(--primary)}
+.nav-item .ic{width:20px;text-align:center;font-size:16px}
+#main{margin-right:var(--sidebar);flex:1;min-width:0;display:flex;flex-direction:column}
+#topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+#topbar .menu-btn{display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;width:40px;height:40px;font-size:18px;color:var(--text)}
+.tb-title{font-family:'Cairo';font-weight:700;font-size:17px;margin-left:auto}
+.tb-ctrl{display:flex;align-items:center;gap:8px}
+.tb-ctrl select{padding:8px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-weight:600;font-size:13px}
+.icon-btn{width:40px;height:40px;border-radius:11px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:17px;display:flex;align-items:center;justify-content:center;position:relative}
+.icon-btn:hover{border-color:var(--primary);color:var(--primary)}
+.badge-dot{position:absolute;top:6px;left:8px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--surface)}
+#content{padding:22px;max-width:1500px;width:100%;margin:0 auto}
+.page{animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.page-head h2{font-size:21px}
+.page-head .sub{color:var(--text-2);font-size:13.5px}
+.spacer{margin-right:auto}
+
+/* ===== Cards / KPIs ===== */
+.grid{display:grid;gap:16px}
+.kpi-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+.card h3{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.kpi{position:relative;overflow:hidden}
+.kpi .k-ic{position:absolute;left:16px;top:16px;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.kpi .k-label{color:var(--text-2);font-size:13px;font-weight:600;margin-bottom:8px}
+.kpi .k-val{font-family:'Cairo';font-size:26px;font-weight:800;letter-spacing:-.5px}
+.kpi .k-sub{font-size:12px;margin-top:6px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.k-up{color:var(--green)}.k-down{color:var(--red)}
+.tone-blue .k-ic{background:rgba(31,111,235,.13);color:var(--primary)}
+.tone-green .k-ic{background:var(--green-bg);color:var(--green)}
+.tone-red .k-ic{background:var(--red-bg);color:var(--red)}
+.tone-amber .k-ic{background:var(--amber-bg);color:var(--amber)}
+.tone-purple .k-ic{background:rgba(124,77,255,.13);color:var(--purple)}
+.chart-box{position:relative;height:300px}
+.chart-box.sm{height:240px}
+
+/* ===== Tables ===== */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table.dt{width:100%;border-collapse:collapse;background:var(--surface);font-size:13.5px;min-width:640px}
+table.dt th{background:var(--surface-2);padding:12px 10px;font-weight:700;text-align:right;color:var(--text-2);font-size:12.5px;white-space:nowrap;border-bottom:2px solid var(--border);position:sticky;top:0}
+table.dt td{padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.dt tbody tr:hover,table.dt tr:hover{background:var(--surface-2)}
+table.dt tfoot td,table.dt .total-row td{background:var(--surface-2);font-weight:800;color:var(--text)}
+table.dt input,table.dt select{width:100%;min-width:80px;padding:6px 8px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text)}
+table.dt input:focus,table.dt select:focus{outline:none;border-color:var(--primary);background:var(--surface-2)}
+table.dt input:hover,table.dt select:hover{background:var(--surface-2)}
+.cell-calc{color:var(--primary);font-weight:700}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.tag.g{background:var(--green-bg);color:var(--green)}
+.tag.r{background:var(--red-bg);color:var(--red)}
+.tag.a{background:var(--amber-bg);color:var(--amber)}
+.tag.b{background:rgba(31,111,235,.13);color:var(--primary)}
+.row-del{color:var(--red);background:transparent;border:none;font-size:16px;padding:4px 8px;border-radius:7px}
+.row-del:hover{background:var(--red-bg)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+
+/* ===== Reports ===== */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rep-section{margin-bottom:8px}
+.rep-line{display:flex;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);font-size:14px}
+.rep-line:last-child{border-bottom:none}
+.rep-line .lbl{color:var(--text-2)}
+.rep-line .val{font-weight:800;font-family:'Cairo'}
+.rep-line.tot{background:var(--surface-2);border-radius:10px;font-size:15px;margin-top:6px}
+.rep-head{font-family:'Cairo';font-weight:800;color:var(--primary);padding:6px 4px;font-size:15px;border-bottom:2px solid var(--primary);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+
+/* modal / toast */
+#modal-bg{position:fixed;inset:0;background:rgba(8,14,26,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);width:100%;max-width:480px;padding:26px;animation:pop .25s}
+.modal h3{margin-bottom:16px;font-size:18px}
+.modal .actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-start}
+#toasts{position:fixed;bottom:24px;left:24px;z-index:300;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--surface);border:1px solid var(--border);border-right:4px solid var(--primary);border-radius:12px;padding:13px 18px;box-shadow:var(--shadow-lg);min-width:260px;animation:slidein .3s;font-size:13.5px;font-weight:600}
+.toast.ok{border-right-color:var(--green)}.toast.err{border-right-color:var(--red)}.toast.warn{border-right-color:var(--amber)}
+@keyframes slidein{from{transform:translateX(-30px);opacity:0}to{transform:none;opacity:1}}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.empty .big{font-size:44px;margin-bottom:10px;opacity:.5}
+.notif-panel{position:absolute;top:52px;left:0;width:340px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);padding:8px;max-height:420px;overflow-y:auto;z-index:60}
+.notif-item{padding:11px 12px;border-radius:10px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.notif-item:hover{background:var(--surface-2)}
+.notif-item .ni{font-size:16px}
+.pill{padding:4px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);font-size:12.5px;font-weight:700}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.info-box{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13.5px;color:var(--text-2);line-height:1.8}
+.doc h3{color:var(--primary);margin:22px 0 8px;font-size:17px}
+.doc h4{margin:16px 0 6px;font-size:15px}
+.doc p,.doc li{color:var(--text-2);font-size:14px;margin-bottom:6px}
+.doc ul{padding-right:22px;margin-bottom:10px}
+.mini-stat{display:flex;gap:14px;flex-wrap:wrap}
+.mini-stat .ms{flex:1;min-width:120px;background:var(--surface-2);border-radius:12px;padding:12px 14px}
+.mini-stat .ms b{font-family:'Cairo';font-size:19px;display:block}
+.mini-stat .ms span{font-size:12px;color:var(--muted)}
+.print-only{display:none}
+
+@media(max-width:980px){
+  :root{--sidebar:0px}
+  #sidebar{transform:translateX(100%);width:280px;box-shadow:var(--shadow-lg)}
+  #sidebar.open{transform:none}
+  #main{margin-right:0}
+  #topbar .menu-btn{display:flex}
+  .tb-title{display:none}
+  .rep-grid,.two-col{grid-template-columns:1fr}
+}
+@media print{
+  #sidebar,#topbar,.toolbar,.no-print,#toasts{display:none!important}
+  #main{margin:0}#content{padding:0;max-width:100%}
+  .print-only{display:block}
+  body{background:#fff;font-size:12px}
+  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <form class="login-card" onsubmit="doLogin(event)">
+    <div class="login-logo">🏢</div>
+    <h1>النظام المالي التنفيذي</h1>
+    <p>منصة المحاسبة وإدارة الفروع — <span id="lgCompany">شركة الطيف الأولى</span></p>
+    <div class="field"><label>اسم المستخدم</label><input id="lg-user" autocomplete="username" placeholder="admin" required></div>
+    <div class="field"><label>كلمة المرور</label><input id="lg-pass" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
+    <button class="btn block" type="submit">🔐 تسجيل الدخول</button>
+    <div class="login-hint">الدخول الافتراضي: <b>admin</b> / <b>admin123</b></div>
+    <div style="margin-top:14px" id="cloudStatusLogin"></div>
+    <button type="button" class="btn ghost block" style="margin-top:8px" onclick="cloudSetup()">☁️ الاتصال بقاعدة بيانات سحابية مشتركة</button>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo">🏢</div>
+      <div><b id="brandCompany">شركة الطيف الأولى</b><span>النظام المالي التنفيذي</span></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <div id="main">
+    <header id="topbar">
+      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div class="tb-ctrl">
+        <span style="font-size:16px">🏢</span>
+        <select id="branchSel" onchange="switchBranch(this.value)"></select>
+      </div>
+      <div class="tb-ctrl">
+        <select id="monthSel" onchange="setPeriod()"></select>
+        <select id="yearSel" onchange="setPeriod()"></select>
+      </div>
+      <div class="tb-title" id="tbTitle">لوحة المؤشرات</div>
+      <div class="tb-ctrl" style="position:relative">
+        <button class="icon-btn" onclick="toggleNotif()" title="التنبيهات">🔔<span class="badge-dot hidden" id="notifDot"></span></button>
+        <div class="notif-panel hidden" id="notifPanel"></div>
+      </div>
+      <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="الوضع الليلي">🌙</button>
+      <div class="tb-ctrl" style="position:relative">
+        <button class="icon-btn" onclick="document.getElementById('userMenu').classList.toggle('hidden')" title="الحساب">👤</button>
+        <div class="notif-panel hidden" id="userMenu" style="width:220px">
+          <div style="padding:12px;border-bottom:1px solid var(--border)"><b id="umName"></b><br><span style="font-size:12px;color:var(--muted)" id="umRole"></span></div>
+          <div class="notif-item" onclick="go('users')">👥 إدارة المستخدمين</div>
+          <div class="notif-item" onclick="go('backup')">💾 النسخ الاحتياطي</div>
+          <div class="notif-item" onclick="logout()" style="color:var(--red)">🚪 تسجيل الخروج</div>
+        </div>
+      </div>
+    </header>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/* ================================================================
+   النظام المالي التنفيذي — محرك البيانات والصيغ (Formula Engine)
+   يخزّن البيانات محلياً (localStorage) — تُدخل مرة واحدة وتُحدّث كل التقارير آلياً
+================================================================ */
+const LS='qasim_fms_v1';
+const CATS=['مشتريات','رواتب','مصروف شخصي','صيانة','مستلزمات','نقل','إيجار','كهرباء','غاز','أخرى'];
+const METHODS=['كاش','شبكة'];
+const APPS=[['hunger','هنجر ستيشن'],['keeta','كيتا'],['ninja','نينجا'],['mrsool','مرسول'],['jahez','جاهز'],['toyo','تويو']];
+const DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const ROLES={admin:'مدير عام',accountant:'محاسب',viewer:'مشاهد'};
+
+let DB, S={branch:null,month:new Date().getMonth()+1,year:2026,page:'dashboard',charts:{}};
+
+/* ---------- Persistence ---------- */
+function seed(){
+  const bid='br_'+Date.now();
+  return {
+    users:[{u:'admin',p:'admin123',name:'المدير العام',role:'admin'}],
+    branches:[{id:bid,name:'فرع طيبة',created:today()}],
+    daily:[], expenses:[], apps:[], salaries:[], withdrawals:[], budget:[],
+    audit:[], settings:{theme:'light',autobackup:true,currency:'ريال',company:'شركة الطيف الأولى'},
+    backups:[]
+  };
+}
+function load(){ try{DB=JSON.parse(localStorage.getItem(LS))||seed();}catch(e){DB=seed();} if(!DB.branches.length)DB.branches.push({id:'br_'+Date.now(),name:'فرع رئيسي',created:today()}); if(!DB.settings.company)DB.settings.company='شركة الطيف الأولى'; }
+function applyBranding(){ const co=DB.settings.company||'شركة الطيف الأولى'; ['brandCompany','lgCompany'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=co;}); document.title='النظام المالي التنفيذي | '+co; }
+function save(){ localStorage.setItem(LS,JSON.stringify(DB)); if(CLOUD.on) pushMeta(); if(DB.settings.autobackup) autoBackup(); }
+
+/* ================= CLOUD SYNC (Firestore) — اختياري ================= */
+const FB_CFG_KEY='spectrum_fb_cfg';
+const COLLS=['daily','expenses','salaries','withdrawals','budget'];
+let CLOUD={on:false,db:null};
+function rput(type,rec){ if(CLOUD.on&&rec&&rec.id){ try{CLOUD.db.collection(type).doc(String(rec.id)).set(JSON.parse(JSON.stringify(rec)));}catch(e){} } }
+function rdel(type,id){ if(CLOUD.on){ try{CLOUD.db.collection(type).doc(String(id)).delete();}catch(e){} } }
+function pushMeta(){ if(!CLOUD.on)return; try{CLOUD.db.collection('_meta').doc('main').set({branches:DB.branches,users:DB.users,settings:DB.settings,audit:(DB.audit||[]).slice(0,300),backups:DB.backups||[]});}catch(e){} }
+function pushAll(){ if(!CLOUD.on){toast('غير متصل بالسحابة','warn');return;} pushMeta(); COLLS.forEach(t=>(DB[t]||[]).forEach(r=>rput(t,r))); toast('تم رفع كل البيانات المحلية إلى السحابة'); }
+function startCloud(cfg,announce){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    CLOUD.db=firebase.firestore(); CLOUD.on=true;
+    firebase.auth().signInAnonymously().catch(()=>{});
+    localStorage.setItem(FB_CFG_KEY,JSON.stringify(cfg));
+    subscribeCloud(); updateCloudBadge();
+    if(announce)toast('تم الاتصال بقاعدة البيانات السحابية ✅','ok');
+  }catch(e){ CLOUD.on=false; toast('تعذّر الاتصال بالسحابة: '+e.message,'err'); }
+}
+function subscribeCloud(){
+  CLOUD.db.collection('_meta').doc('main').onSnapshot(d=>{
+    if(d.exists){const m=d.data(); if(m.branches&&m.branches.length)DB.branches=m.branches; if(m.users&&m.users.length)DB.users=m.users; if(m.settings)DB.settings=Object.assign(DB.settings,m.settings); if(m.audit)DB.audit=m.audit; if(m.backups)DB.backups=m.backups;}
+    else pushMeta();
+    localStorage.setItem(LS,JSON.stringify(DB)); applyBranding(); cloudRefresh();
+  },err=>toast('السحابة: '+(err.code||err.message),'warn'));
+  COLLS.forEach(t=>CLOUD.db.collection(t).onSnapshot(s=>{ DB[t]=s.docs.map(x=>x.data()); localStorage.setItem(LS,JSON.stringify(DB)); cloudRefresh(); },()=>{}));
+}
+function cloudRefresh(){ if(!S.loggedIn)return; try{buildSelectors();}catch(e){} try{render();}catch(e){} }
+function updateCloudBadge(){ const html=CLOUD.on?'<span class="tag g">☁️ متصل بالسحابة — مزامنة لحظية</span>':'<span class="tag a">💾 محلي (بيانات هذا الجهاز)</span>'; ['cloudStatus','cloudStatusLogin'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;}); }
+function disconnectCloud(){ confirmBox('فصل السحابة','سيعود النظام للعمل ببيانات هذا الجهاز فقط. متابعة؟',()=>{localStorage.removeItem(FB_CFG_KEY);location.reload();}); }
+function cloudSetup(){
+  const bg=document.createElement('div');bg.id='modal-bg';
+  bg.innerHTML=`<div class="modal" style="max-width:580px"><h3>☁️ الاتصال بقاعدة بيانات سحابية مشتركة</h3>
+    <p style="color:var(--text-2);font-size:13.5px">الصق إعدادات <b>firebaseConfig</b> من مشروع Firebase الخاص بك. ستتزامن بيانات كل الفروع لحظياً بين جميع الأجهزة.</p>
+    <div class="field"><label>firebaseConfig</label><textarea id="fbCfg" style="width:100%;height:160px;padding:10px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface-2);color:var(--text);font-family:monospace;direction:ltr;font-size:12px" placeholder='{ "apiKey": "AIza...", "authDomain": "xxx.firebaseapp.com", "projectId": "xxx", "appId": "1:..." }'></textarea></div>
+    <div class="actions"><button class="btn" onclick="doCloudConnect()">🔗 اتصال ومزامنة</button><button class="btn ghost" onclick="this.closest('#modal-bg').remove()">إلغاء</button></div>
+    <div class="info-box" style="margin-top:12px;font-size:12.5px">تحتاج مشروع Firebase مجاني مع تفعيل «Firestore Database» و«Anonymous Authentication». راجع دليل الإعداد المرفق للخطوات بالتفصيل.</div></div>`;
+  document.body.appendChild(bg); bg.onclick=e=>{if(e.target===bg)bg.remove();};
+}
+function doCloudConnect(){
+  let raw=document.getElementById('fbCfg').value.trim();
+  try{
+    raw=raw.replace(/^[^{]*/,'').replace(/;?\s*$/,'');
+    let cfg; try{cfg=JSON.parse(raw);}catch(_){ cfg=(new Function('return ('+raw+')'))(); }
+    if(!cfg.projectId||!cfg.apiKey) throw new Error('الإعدادات ناقصة (projectId / apiKey)');
+    document.querySelector('#modal-bg')?.remove();
+    startCloud(cfg,true);
+  }catch(e){ toast('صيغة الإعدادات غير صحيحة: '+e.message,'err'); }
+}
+function today(){return new Date().toISOString().slice(0,10);}
+function num(v){v=parseFloat(v);return isNaN(v)?0:v;}
+function money(v){return num(v).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(DB?.settings.currency||'ريال');}
+function n0(v){return num(v).toLocaleString('ar-EG',{maximumFractionDigits:2});}
+function pct(v){return (num(v)*100).toLocaleString('ar-EG',{maximumFractionDigits:1})+'٪';}
+
+/* ---------- Audit ---------- */
+function audit(action){ DB.audit.unshift({t:new Date().toISOString(),u:S.user?.name||'—',action,branch:curBranch()?.name}); if(DB.audit.length>500)DB.audit.pop(); }
+
+/* ---------- Period / Branch helpers ---------- */
+function curBranch(){return DB.branches.find(b=>b.id===S.branch);}
+function ym(){return S.year+'-'+String(S.month).padStart(2,'0');}
+function inPeriod(dateStr){ if(!dateStr)return false; return dateStr.slice(0,7)===ym(); }
+function rows(type,branch=S.branch,period=true){
+  return DB[type].filter(r=>r.branchId===branch && (!period|| (r.month? r.month===ym() : inPeriod(r.date))));
+}
+
+/* ================================================================
+   FORMULA ENGINE — كل القيم تُحسب ديناميكياً (تطابق منطق ملف Excel)
+================================================================ */
+function calc(branch=S.branch){
+  const D=rows('daily',branch), E=rows('expenses',branch), A=rows('apps',branch),
+        Sal=rows('salaries',branch), W=rows('withdrawals',branch),
+        Bud=DB.budget.find(b=>b.branchId===branch&&b.month===ym())||{};
+  // --- Daily aggregates (الإدخال اليومي) ---
+  let cash=0,network=0,cashExp=0,netExp=0,dWith=0,dSal=0;
+  D.forEach(r=>{cash+=num(r.cash);network+=num(r.network);cashExp+=num(r.cashExp);netExp+=num(r.netExp);dWith+=num(r.withdrawals);dSal+=num(r.salaries);});
+  const totalSales=cash+network, opExp=cashExp+netExp;
+  // --- Salaries sheet (الرواتب): withdrawn are amounts paid ---
+  const salPaid=Sal.reduce((s,r)=>s+num(r.withdrawn),0);
+  const salBasic=Sal.reduce((s,r)=>s+num(r.basic),0);
+  // --- Personal withdrawals (السحبيات الشخصية) ---
+  const wCash=W.filter(r=>r.method==='كاش').reduce((s,r)=>s+num(r.amount),0);
+  const wNet=W.filter(r=>String(r.method).includes('شبكة')).reduce((s,r)=>s+num(r.amount),0);
+  const wTotal=wCash+wNet;
+  // --- Dashboard formulas (لوحة التحكم) ---
+  const totalExpensesAll=opExp+salPaid+wTotal;
+  const netRemaining=totalSales-opExp-salPaid-wTotal;              // صافي المتبقي
+  const cashBalance=cash-cashExp-salPaid-wCash;                    // رصيد الصندوق كاش
+  const netBalance=network-netExp-wNet;                           // رصيد الشبكة
+  const cashOut=cashExp+salPaid+wCash;                            // مصروفات خارجة من الكاش
+  const netOut=netExp+wNet;                                       // مصروفات خارجة من الشبكة
+  // --- Delivery apps (مُدمجة داخل الإدخال اليومي لكل فرع) ---
+  const appsTotal=D.reduce((s,r)=>s+APPS.reduce((x,[k])=>x+num(r[k]),0),0);
+  const appsByApp={}; APPS.forEach(([k,l])=>appsByApp[l]=D.reduce((s,r)=>s+num(r[k]),0));
+  // --- Expense ledger by category ---
+  const byCat={}; CATS.forEach(c=>byCat[c]=0);
+  E.forEach(r=>{byCat[r.category]=(byCat[r.category]||0)+num(r.amount);});
+  const ledgerTotal=E.reduce((s,r)=>s+num(r.amount),0);
+  // --- Statistics ---
+  const sold=D.filter(r=>num(r.cash)+num(r.network)>0);
+  const bestDay=sold.reduce((m,r)=>num(r.cash)>num(m?.cash||-1)?r:m,null);
+  const worstDay=sold.reduce((m,r)=>(m===null||num(r.cash)<num(m.cash))?r:m,null);
+  const daysWorked=sold.length;
+  const avgDaily=daysWorked?totalSales/daysWorked:0;
+  // --- Ratios ---
+  const expRatio=totalSales?opExp/totalSales:0, salRatio=totalSales?salPaid/totalSales:0,
+        profitMargin=totalSales?netRemaining/totalSales:0, netRatio=totalSales?(totalSales-totalExpensesAll)/totalSales:0;
+  return {cash,network,totalSales,cashExp,netExp,opExp,salPaid,salBasic,wCash,wNet,wTotal,
+    totalExpensesAll,netRemaining,cashBalance,netBalance,cashOut,netOut,
+    appsTotal,appsByApp,byCat,ledgerTotal,bestDay,worstDay,daysWorked,avgDaily,
+    expRatio,salRatio,profitMargin,netRatio,budget:Bud,dWith,dSal,records:{D,E,A,Sal,W}};
+}
+/* Ten-day periods (تقرير 10 أيام) */
+function tenDay(branch=S.branch){
+  const D=rows('daily',branch); const parts=[[1,10],[11,20],[21,31]];
+  return parts.map(([a,b],i)=>{
+    const seg=D.filter(r=>{const d=+r.date.slice(8,10);return d>=a&&d<=b;});
+    const cash=seg.reduce((s,r)=>s+num(r.cash),0), net=seg.reduce((s,r)=>s+num(r.network),0);
+    const exp=seg.reduce((s,r)=>s+num(r.cashExp)+num(r.netExp),0);
+    const sal=seg.reduce((s,r)=>s+num(r.salaries),0), wd=seg.reduce((s,r)=>s+num(r.withdrawals),0);
+    const rev=cash+net, netv=rev-exp-sal-wd;
+    return {label:['الفترة الأولى (1-10)','الفترة الثانية (11-20)','الفترة الثالثة (21-31)'][i],from:a,to:b,cash,net,rev,exp,sal,wd,net_:netv};
+  });
+}
+/* Annual: aggregate 12 months */
+function annual(branch=S.branch,year=S.year){
+  return Array.from({length:12},(_,m)=>{
+    const p=year+'-'+String(m+1).padStart(2,'0');
+    const D=DB.daily.filter(r=>r.branchId===branch&&r.date.slice(0,7)===p);
+    const Sal=DB.salaries.filter(r=>r.branchId===branch&&r.month===p);
+    const W=DB.withdrawals.filter(r=>r.branchId===branch&&r.date.slice(0,7)===p);
+    const cash=D.reduce((s,r)=>s+num(r.cash),0),net=D.reduce((s,r)=>s+num(r.network),0);
+    const opExp=D.reduce((s,r)=>s+num(r.cashExp)+num(r.netExp),0);
+    const sal=Sal.reduce((s,r)=>s+num(r.withdrawn),0);
+    const wt=W.reduce((s,r)=>s+num(r.amount),0);
+    const rev=cash+net; return {month:m+1,name:MONTHS[m],cash,net,rev,opExp,sal,wt,expAll:opExp+sal+wt,netv:rev-opExp-sal-wt};
+  });
+}
+/* Consolidated across all branches */
+function consolidated(){
+  return DB.branches.map(b=>({branch:b,...calc(b.id)}));
+}
+
+/* ================================================================
+   AUTH, SESSION, THEME, NOTIFICATIONS
+================================================================ */
+function doLogin(e){
+  e.preventDefault();
+  const u=document.getElementById('lg-user').value.trim(), p=document.getElementById('lg-pass').value;
+  const usr=DB.users.find(x=>x.u===u&&x.p===p);
+  if(!usr){toast('اسم المستخدم أو كلمة المرور غير صحيحة','err');return;}
+  S.user=usr; S.loggedIn=true; audit('تسجيل دخول'); save();
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('umName').textContent=usr.name;
+  document.getElementById('umRole').textContent=ROLES[usr.role];
+  boot();
+}
+function logout(){ audit('تسجيل خروج'); save(); location.reload(); }
+function can(action){ // permissions: edit/manage
+  const r=S.user?.role;
+  if(action==='edit') return r==='admin'||r==='accountant';
+  if(action==='manage') return r==='admin';
+  return true;
+}
+function toggleTheme(){
+  const t=document.body.dataset.theme==='dark'?'light':'dark';
+  document.body.dataset.theme=t; DB.settings.theme=t; save();
+  document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙';
+  if(S.page) render();
+}
+function toast(msg,type='ok'){
+  const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-30px)';setTimeout(()=>el.remove(),300);},3200);
+}
+function toggleNotif(){const p=document.getElementById('notifPanel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))renderNotif();}
+function checkAlerts(){
+  const a=[],c=calc(),D=rows('daily');
+  const day=new Date().getDate();
+  if(!D.some(r=>r.date===today())&&S.month===new Date().getMonth()+1) a.push(['⚠️','لم يتم إدخال مبيعات اليوم بعد']);
+  D.forEach(r=>{ if((num(r.cash)+num(r.network))>0 && num(r.cashExp)+num(r.netExp)===0) a.push(['📝','يوم '+r.date+': مبيعات بدون مصروفات مسجلة']); });
+  // duplicate detection
+  const seen={}; D.forEach(r=>{if(seen[r.date])a.push(['🔁','تاريخ مكرر في الإدخال اليومي: '+r.date]);seen[r.date]=1;});
+  if(c.netRemaining<0) a.push(['📉','تنبيه: النتيجة الشهرية تشير إلى عجز ('+money(c.netRemaining)+')']);
+  const unpaid=rows('salaries').filter(r=>num(r.basic)-num(r.withdrawn)>0);
+  if(unpaid.length) a.push(['💰',unpaid.length+' موظف لديهم رواتب متبقية غير مصروفة']);
+  return a;
+}
+function renderNotif(){
+  const a=checkAlerts(),p=document.getElementById('notifPanel');
+  p.innerHTML='<div style="padding:10px 12px;font-weight:700;border-bottom:1px solid var(--border)">🔔 التنبيهات والتحقق</div>'+
+    (a.length?a.map(([i,t])=>`<div class="notif-item"><span class="ni">${i}</span><span>${t}</span></div>`).join(''):
+    '<div class="empty" style="padding:24px"><div class="big">✅</div>لا توجد تنبيهات — كل البيانات سليمة</div>');
+}
+function refreshNotifDot(){document.getElementById('notifDot').classList.toggle('hidden',checkAlerts().length===0);}
+
+/* ================================================================
+   NAVIGATION
+================================================================ */
+const NAV=[
+  ['التشغيل اليومي',[
+    ['dashboard','📊','لوحة المؤشرات'],
+    ['daily','🧾','الإدخال اليومي'],
+    ['expenses','💸','المصروفات التفصيلية'],
+    ['apps','🛵','تطبيقات التوصيل'],
+    ['salaries','👨‍🍳','كشف الرواتب'],
+    ['withdrawals','🏧','السحبيات الشخصية'],
+    ['opex','📋','المصروفات التشغيلية'],
+  ]],
+  ['التقارير المالية',[
+    ['rep-daily','📅','التقرير اليومي'],
+    ['rep-ten','🗓️','تقرير 10 أيام'],
+    ['rep-month','📆','التقرير الشهري'],
+    ['rep-annual','📈','التقرير السنوي'],
+    ['pl','⚖️','قائمة الأرباح والخسائر'],
+    ['cashflow','💧','التدفقات النقدية'],
+    ['revenue','💵','تحليل الإيرادات'],
+    ['expense','🔻','تحليل المصروفات'],
+  ]],
+  ['التحليل التنفيذي',[
+    ['exec','🎯','الملخص التنفيذي'],
+    ['ratios','📐','النسب المالية'],
+    ['budget','🎚️','الموازنة مقابل الفعلي'],
+    ['trend','📉','تحليل الاتجاهات'],
+    ['compare','🔍','التحليل المقارن'],
+  ]],
+  ['الفروع',[
+    ['branch-perf','🏢','أداء الفروع'],
+    ['consolidated','🧩','التقرير الموحّد'],
+    ['branches','⚙️','إدارة الفروع'],
+  ]],
+  ['النظام',[
+    ['settings','🏷️','إعدادات الشركة'],
+    ['backup','💾','النسخ والاستعادة'],
+    ['users','👥','المستخدمون والصلاحيات'],
+    ['audit','🛡️','سجل النشاط'],
+    ['docs','📚','دليل الاستخدام'],
+  ]],
+];
+function buildNav(){
+  document.getElementById('nav').innerHTML=NAV.map(([g,items])=>
+    `<div class="nav-group"><div class="gt">${g}</div>${items.map(([id,ic,l])=>
+      `<div class="nav-item" data-p="${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('')}</div>`).join('');
+}
+function go(p){ S.page=p; document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('userMenu').classList.add('hidden');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.p===p));
+  render();
+}
+function title(){ for(const[,items]of NAV)for(const[id,,l]of items)if(id===S.page)return l; return '—'; }
+
+/* ================================================================
+   BOOT
+================================================================ */
+function boot(){
+  document.body.dataset.theme=DB.settings.theme||'light';
+  document.getElementById('themeBtn').textContent=document.body.dataset.theme==='dark'?'☀️':'🌙';
+  S.branch=DB.branches[0].id;
+  applyBranding(); buildNav(); buildSelectors(); go('dashboard');
+}
+function buildSelectors(){
+  document.getElementById('branchSel').innerHTML=DB.branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  document.getElementById('branchSel').value=S.branch;
+  document.getElementById('monthSel').innerHTML=MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  document.getElementById('monthSel').value=S.month;
+  const yrs=[2024,2025,2026,2027,2028];
+  document.getElementById('yearSel').innerHTML=yrs.map(y=>`<option value="${y}">${y}</option>`).join('');
+  document.getElementById('yearSel').value=S.year;
+}
+function switchBranch(id){S.branch=id;render();}
+function setPeriod(){S.month=+document.getElementById('monthSel').value;S.year=+document.getElementById('yearSel').value;render();}
+
+/* main render dispatcher */
+function render(){
+  document.getElementById('tbTitle').textContent=title();
+  destroyCharts();
+  const c=document.getElementById('content');
+  const fn=PAGES[S.page]; c.innerHTML=fn?fn():'<div class="empty">صفحة غير موجودة</div>';
+  if(AFTER[S.page])AFTER[S.page]();
+  refreshNotifDot();
+}
+function destroyCharts(){Object.values(S.charts).forEach(ch=>{try{ch.destroy();}catch(e){}});S.charts={};}
+
+/* ================================================================
+   PAGE RENDERERS
+================================================================ */
+const PAGES={}, AFTER={};
+
+function head(t,sub,actions=''){return `<div class="page-head"><div><h2>${t}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div><div class="spacer"></div>${actions}</div>`;}
+function kpi(label,val,ic,tone,sub=''){return `<div class="card kpi ${tone}"><div class="k-ic">${ic}</div><div class="k-label">${label}</div><div class="k-val">${val}</div>${sub?`<div class="k-sub">${sub}</div>`:''}</div>`;}
+function periodLabel(){return MONTHS[S.month-1]+' '+S.year;}
+</script>
+<script>
+/* ---------------- DASHBOARD ---------------- */
+PAGES.dashboard=function(){
+  const c=calc(), t=tenDay();
+  const trend=c.netRemaining>=0?`<span class="k-up">▲ فائض</span>`:`<span class="k-down">▼ عجز</span>`;
+  return head('لوحة المؤشرات التنفيذية','<b>'+curBranch().name+'</b> — '+periodLabel(),
+      `<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة</button>
+       <button class="btn sm no-print" onclick="exportExcel()">📊 Excel</button>`)
+  +`<div class="grid kpi-grid" style="margin-bottom:16px">
+    ${kpi('إجمالي الإيرادات',money(c.totalSales),'💵','tone-green','كاش '+n0(c.cash)+' · شبكة '+n0(c.network))}
+    ${kpi('إجمالي المصروفات',money(c.totalExpensesAll),'💸','tone-red','تشغيلي '+n0(c.opExp))}
+    ${kpi('صافي المتبقي',money(c.netRemaining),'📈','tone-blue',trend)}
+    ${kpi('هامش الربح',pct(c.profitMargin),'🎯','tone-purple','من الإيرادات')}
+    ${kpi('رصيد الصندوق (كاش)',money(c.cashBalance),'🏦','tone-amber','')}
+    ${kpi('رصيد الشبكة',money(c.netBalance),'💳','tone-blue','')}
+    ${kpi('إجمالي الرواتب',money(c.salPaid),'👨‍🍳','tone-amber','')}
+    ${kpi('السحبيات الشخصية',money(c.wTotal),'🏧','tone-red','كاش '+n0(c.wCash)+' · شبكة '+n0(c.wNet))}
+  </div>
+  <div class="grid" style="grid-template-columns:2fr 1fr;margin-bottom:16px">
+    <div class="card"><h3>📈 اتجاه المبيعات اليومية</h3><div class="chart-box"><canvas id="ch-trend"></canvas></div></div>
+    <div class="card"><h3>💰 توزيع الإيرادات</h3><div class="chart-box"><canvas id="ch-split"></canvas></div></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+    <div class="card"><h3>🔻 المصروفات حسب التصنيف</h3><div class="chart-box sm"><canvas id="ch-cat"></canvas></div></div>
+    <div class="card"><h3>🛵 مبيعات تطبيقات التوصيل</h3><div class="chart-box sm"><canvas id="ch-apps"></canvas></div></div>
+  </div>
+  <div class="card"><h3>🗓️ ملخص الفترات العشرية</h3>
+    <div class="table-wrap"><table class="dt"><thead><tr><th>الفترة</th><th>كاش</th><th>شبكة</th><th>الإيرادات</th><th>المصروفات</th><th>الصافي</th><th>الحالة</th></tr></thead><tbody>
+    ${t.map(p=>`<tr><td>${p.label}</td><td>${n0(p.cash)}</td><td>${n0(p.net)}</td><td>${n0(p.rev)}</td><td>${n0(p.exp)}</td><td class="${p.net_>=0?'pos':'neg'}">${n0(p.net_)}</td><td>${p.net_>=0?'<span class="tag g">فائض ✅</span>':'<span class="tag r">عجز ❌</span>'}</td></tr>`).join('')}
+    </tbody></table></div>
+  </div>`;
+};
+AFTER.dashboard=function(){
+  const c=calc(),D=rows('daily').filter(r=>r.date).sort((a,b)=>a.date.localeCompare(b.date));
+  mkChart('ch-trend',{type:'line',data:{labels:D.map(r=>+r.date.slice(8,10)),datasets:[
+    {label:'الإيرادات',data:D.map(r=>num(r.cash)+num(r.network)),borderColor:cvar('--green'),backgroundColor:'rgba(27,158,90,.1)',fill:true,tension:.35},
+    {label:'المصروفات',data:D.map(r=>num(r.cashExp)+num(r.netExp)),borderColor:cvar('--red'),tension:.35}]},options:opts()});
+  mkChart('ch-split',{type:'doughnut',data:{labels:['كاش','شبكة'],datasets:[{data:[c.cash,c.network],backgroundColor:[cvar('--primary'),cvar('--accent')]}]},options:opts(true)});
+  const cats=Object.entries(c.byCat).filter(([,v])=>v>0);
+  mkChart('ch-cat',{type:'bar',data:{labels:cats.map(x=>x[0]),datasets:[{data:cats.map(x=>x[1]),backgroundColor:cvar('--red'),borderRadius:6}]},options:opts()});
+  const ap=Object.entries(c.appsByApp).filter(([,v])=>v>0);
+  mkChart('ch-apps',{type:'bar',data:{labels:ap.map(x=>x[0]),datasets:[{data:ap.map(x=>x[1]),backgroundColor:cvar('--primary'),borderRadius:6}]},options:opts()});
+};
+function cvar(v){return getComputedStyle(document.body).getPropertyValue(v).trim();}
+function mkChart(id,cfg){const el=document.getElementById(id);if(!el)return;S.charts[id]=new Chart(el,cfg);}
+function opts(legend){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!legend||undefined,labels:{font:{family:'Tajawal'},color:cvar('--text-2')},position:'bottom'}},scales:legend?{}:{x:{ticks:{color:cvar('--muted'),font:{family:'Tajawal'}},grid:{color:cvar('--border')}},y:{ticks:{color:cvar('--muted'),font:{family:'Tajawal'}},grid:{color:cvar('--border')}}}};}
+</script>
+<script>
+/* ================================================================
+   DATA ENTRY PAGES  (الإدخال — تُدخل مرة واحدة)
+================================================================ */
+/* ---- الإدخال اليومي ---- */
+PAGES.daily=function(){
+  const D=rows('daily').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const c=calc();
+  return head('الإدخال اليومي','سجّل مبيعات ومصروفات كل يوم — تتحدث كل التقارير تلقائياً',
+    can('edit')?`<button class="btn sm no-print" onclick="addDaily()">➕ إضافة يوم</button><button class="btn ghost sm no-print" onclick="exportCSV('daily')">⬇️ CSV</button>`:'')
+  +`<div class="info-box no-print" style="margin-bottom:14px">💡 <b>الصيغ التلقائية:</b> إجمالي المبيعات = كاش + شبكة · إجمالي التطبيقات = مجموع تطبيقات التوصيل (جزء من مبيعات الشبكة) · إجمالي المصروفات = مصروفات كاش + مصروفات شبكة · صافي اليوم = المبيعات − المصروفات − السحبيات − الرواتب</div>
+  <div class="table-wrap"><table class="dt"><thead><tr>
+    <th>التاريخ</th><th>اليوم</th><th>كاش</th><th>شبكة</th>${APPS.map(([,l])=>`<th>${l}</th>`).join('')}<th>إجمالي التطبيقات</th><th>إجمالي المبيعات</th><th>مصروفات كاش</th><th>مصروفات شبكة</th><th>إجمالي المصروفات</th><th>سحبيات</th><th>رواتب</th><th>صافي اليوم</th><th>الحالة</th><th>ملاحظات</th>${can('edit')?'<th></th>':''}</tr></thead><tbody>
+    ${D.length?D.map(r=>dailyRow(r)).join(''):`<tr><td colspan="${20+(can('edit')?1:0)}"><div class="empty"><div class="big">🧾</div>لا توجد بيانات — ابدأ بإضافة يوم</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row">
+    <td colspan="2">الإجمالي الشهري</td><td>${n0(c.cash)}</td><td>${n0(c.network)}</td>${APPS.map(([,l])=>`<td>${n0(c.appsByApp[l])}</td>`).join('')}<td>${n0(c.appsTotal)}</td><td>${n0(c.totalSales)}</td><td>${n0(c.cashExp)}</td><td>${n0(c.netExp)}</td><td>${n0(c.opExp)}</td><td>${n0(c.dWith)}</td><td>${n0(c.dSal)}</td><td>${n0(c.totalSales-c.opExp-c.dWith-c.dSal)}</td><td colspan="${can('edit')?3:2}"></td>
+  </tr></tfoot></table></div>`;
+};
+function dailyRow(r){
+  const sales=num(r.cash)+num(r.network), exp=num(r.cashExp)+num(r.netExp), net=sales-exp-num(r.withdrawals)-num(r.salaries);
+  const appsT=APPS.reduce((s,[k])=>s+num(r[k]),0);
+  const dow=r.date?DAYS[new Date(r.date).getDay()]:'';
+  const ed=can('edit');
+  const f=(k,v)=>ed?`<input type="${k==='date'?'date':'number'}" value="${v??''}" onchange="upd('daily','${r.id}','${k}',this.value)">`:(k==='date'?v:n0(v));
+  return `<tr>
+    <td>${f('date',r.date)}</td><td>${dow}</td>
+    <td>${f('cash',r.cash)}</td><td>${f('network',r.network)}</td>
+    ${APPS.map(([k])=>`<td>${f(k,r[k])}</td>`).join('')}
+    <td class="cell-calc">${n0(appsT)}</td>
+    <td class="cell-calc">${n0(sales)}</td>
+    <td>${f('cashExp',r.cashExp)}</td><td>${f('netExp',r.netExp)}</td>
+    <td class="cell-calc">${n0(exp)}</td>
+    <td>${f('withdrawals',r.withdrawals)}</td><td>${f('salaries',r.salaries)}</td>
+    <td class="cell-calc ${net>=0?'pos':'neg'}">${n0(net)}</td>
+    <td>${sales===0?'':(net>=0?'<span class="tag g">فائض ✅</span>':'<span class="tag r">عجز ❌</span>')}</td>
+    <td>${ed?`<input value="${r.notes||''}" onchange="upd('daily','${r.id}','notes',this.value)">`:(r.notes||'')}</td>
+    ${ed?`<td><button class="row-del" onclick="del('daily','${r.id}')">🗑️</button></td>`:''}</tr>`;
+}
+function addDaily(){
+  const d=rows('daily'); const day=String(d.length+1).padStart(2,'0');
+  const o={id:uid(),branchId:S.branch,date:`${ym()}-${day>31?'01':day}`,cash:'',network:'',cashExp:'',netExp:'',withdrawals:'',salaries:'',notes:''};
+  APPS.forEach(([k])=>o[k]='');
+  DB.daily.push(o); if(CLOUD.on)rput('daily',o);
+  audit('إضافة إدخال يومي');save();render();toast('تمت إضافة يوم جديد');
+}
+
+/* ---- المصروفات التفصيلية (الخرج اليومي) ---- */
+PAGES.expenses=function(){
+  const E=rows('expenses').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const tot=E.reduce((s,r)=>s+num(r.amount),0);
+  return head('المصروفات التفصيلية','دفتر المصروفات — يغذّي تحليل المصروفات حسب التصنيف',
+    can('edit')?`<button class="btn sm no-print" onclick="addExpense()">➕ مصروف</button><button class="btn ghost sm no-print" onclick="exportCSV('expenses')">⬇️ CSV</button>`:'')
+  +`<div class="table-wrap"><table class="dt"><thead><tr><th>التاريخ</th><th>البيان</th><th>التصنيف</th><th>طريقة الدفع</th><th>المبلغ</th><th>ملاحظات</th>${can('edit')?'<th></th>':''}</tr></thead><tbody>
+    ${E.length?E.map(r=>{const ed=can('edit');return `<tr>
+      <td>${ed?`<input type="date" value="${r.date||''}" onchange="upd('expenses','${r.id}','date',this.value)">`:r.date}</td>
+      <td>${ed?`<input value="${r.name||''}" onchange="upd('expenses','${r.id}','name',this.value)">`:r.name}</td>
+      <td>${ed?sel(CATS,r.category,`upd('expenses','${r.id}','category',this.value)`):`<span class="tag b">${r.category}</span>`}</td>
+      <td>${ed?sel(METHODS,r.method,`upd('expenses','${r.id}','method',this.value)`):r.method}</td>
+      <td>${ed?`<input type="number" value="${r.amount||''}" onchange="upd('expenses','${r.id}','amount',this.value)">`:n0(r.amount)}</td>
+      <td>${ed?`<input value="${r.notes||''}" onchange="upd('expenses','${r.id}','notes',this.value)">`:(r.notes||'')}</td>
+      ${ed?`<td><button class="row-del" onclick="del('expenses','${r.id}')">🗑️</button></td>`:''}</tr>`;}).join(''):`<tr><td colspan="7"><div class="empty"><div class="big">💸</div>لا توجد مصروفات مسجلة</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row"><td colspan="4">إجمالي المصروفات</td><td>${n0(tot)}</td><td colspan="${can('edit')?2:1}"></td></tr></tfoot></table></div>`;
+};
+function addExpense(){const o={id:uid(),branchId:S.branch,date:today(),name:'',category:'مشتريات',method:'كاش',amount:'',notes:''};DB.expenses.push(o);if(CLOUD.on)rput('expenses',o);audit('إضافة مصروف');save();render();}
+
+/* ---- تطبيقات التوصيل (تحليل مشتق من الإدخال اليومي لكل فرع) ---- */
+PAGES.apps=function(){
+  const A=rows('daily').filter(r=>r.date&&APPS.some(([k])=>num(r[k])>0)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const c=calc();const tot={};APPS.forEach(([k])=>tot[k]=A.reduce((s,r)=>s+num(r[k]),0));
+  const grand=Object.values(tot).reduce((a,b)=>a+b,0);
+  return head('تطبيقات التوصيل','تحليل مبيعات التطبيقات — '+curBranch().name+' · '+periodLabel(),
+    `<button class="btn sm no-print" onclick="go('daily')">🧾 إدخال في «الإدخال اليومي»</button>`)
+  +`<div class="info-box no-print" style="margin-bottom:14px">💡 تُدخل مبالغ التطبيقات الآن مباشرةً ضمن صفحة «الإدخال اليومي» لكل فرع (أعمدة: هنجر، كيتا، نينجا، مرسول، جاهز، تويو). هذه الصفحة تعرض تحليلاً تلقائياً لها.</div>
+  <div class="grid kpi-grid" style="margin-bottom:16px">
+    ${kpi('إجمالي مبيعات التطبيقات',money(grand),'🛵','tone-purple')}
+    ${APPS.slice(0,3).map(([k,l])=>kpi(l,money(tot[k]),'📱','tone-blue',pct(grand?tot[k]/grand:0))).join('')}</div>
+  <div class="two-col" style="margin-bottom:16px">
+    <div class="card"><h3>📊 حصة كل تطبيق</h3><div class="chart-box sm"><canvas id="ch-apps2"></canvas></div></div>
+    <div class="card"><h3>🏆 ترتيب التطبيقات</h3>${APPS.map(([k,l])=>[l,tot[k]]).sort((a,b)=>b[1]-a[1]).map(([l,v])=>`<div class="rep-line"><span class="lbl">${l}</span><span class="val">${money(v)} <span style="color:var(--muted);font-size:12px">(${pct(grand?v/grand:0)})</span></span></div>`).join('')}</div></div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>التاريخ</th><th>اليوم</th>${APPS.map(([,l])=>`<th>${l}</th>`).join('')}<th>الإجمالي</th></tr></thead><tbody>
+    ${A.length?A.map(r=>{const rt=APPS.reduce((s,[k])=>s+num(r[k]),0);return `<tr><td>${r.date}</td><td>${DAYS[new Date(r.date).getDay()]}</td>${APPS.map(([k])=>`<td>${n0(r[k])}</td>`).join('')}<td class="cell-calc">${n0(rt)}</td></tr>`;}).join(''):`<tr><td colspan="${APPS.length+3}"><div class="empty"><div class="big">🛵</div>لا توجد بيانات تطبيقات — أدخلها من «الإدخال اليومي»</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row"><td colspan="2">الإجمالي</td>${APPS.map(([k])=>`<td>${n0(tot[k])}</td>`).join('')}<td>${n0(grand)}</td></tr></tfoot></table></div>`;
+};
+AFTER.apps=function(){const c=calc();const e=Object.entries(c.appsByApp).filter(([,v])=>v>0);mkChart('ch-apps2',{type:'doughnut',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:['#1f6feb','#c9a227','#1b9e5a','#d64545','#7c4dff','#e0a92e']}]},options:opts(true)});};
+
+/* ---- كشف الرواتب ---- */
+PAGES.salaries=function(){
+  const Sl=rows('salaries');
+  const tb=Sl.reduce((s,r)=>s+num(r.basic),0),tw=Sl.reduce((s,r)=>s+num(r.withdrawn),0),tr=tb-tw;
+  return head('كشف الرواتب',periodLabel()+' — المتبقي = الأساسي − المصروف',
+    can('edit')?`<button class="btn sm no-print" onclick="addSalary()">➕ موظف</button><button class="btn ghost sm no-print" onclick="exportCSV('salaries')">⬇️ CSV</button>`:'')
+  +`<div class="table-wrap"><table class="dt"><thead><tr><th>#</th><th>اسم الموظف</th><th>الوظيفة</th><th>الراتب الأساسي</th><th>المصروف</th><th>المتبقي</th><th>تاريخ الصرف</th><th>ملاحظات</th>${can('edit')?'<th></th>':''}</tr></thead><tbody>
+    ${Sl.length?Sl.map((r,i)=>{const ed=can('edit');const rem=num(r.basic)-num(r.withdrawn);return `<tr>
+      <td>${i+1}</td>
+      <td>${ed?`<input value="${r.name||''}" onchange="upd('salaries','${r.id}','name',this.value)">`:r.name}</td>
+      <td>${ed?`<input value="${r.position||''}" onchange="upd('salaries','${r.id}','position',this.value)">`:r.position}</td>
+      <td>${ed?`<input type="number" value="${r.basic||''}" onchange="upd('salaries','${r.id}','basic',this.value)">`:n0(r.basic)}</td>
+      <td>${ed?`<input type="number" value="${r.withdrawn||''}" onchange="upd('salaries','${r.id}','withdrawn',this.value)">`:n0(r.withdrawn)}</td>
+      <td class="cell-calc ${rem>0?'neg':'pos'}">${n0(rem)}</td>
+      <td>${ed?`<input type="date" value="${r.payDate||''}" onchange="upd('salaries','${r.id}','payDate',this.value)">`:(r.payDate||'')}</td>
+      <td>${ed?`<input value="${r.notes||''}" onchange="upd('salaries','${r.id}','notes',this.value)">`:(r.notes||'')}</td>
+      ${ed?`<td><button class="row-del" onclick="del('salaries','${r.id}')">🗑️</button></td>`:''}</tr>`;}).join(''):`<tr><td colspan="9"><div class="empty"><div class="big">👨‍🍳</div>لا يوجد موظفون</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row"><td colspan="3">الإجمالي</td><td>${n0(tb)}</td><td>${n0(tw)}</td><td>${n0(tr)}</td><td colspan="${can('edit')?3:2}"></td></tr></tfoot></table></div>`;
+};
+function addSalary(){const o={id:uid(),branchId:S.branch,month:ym(),name:'',position:'',basic:'',withdrawn:'',payDate:'',notes:''};DB.salaries.push(o);if(CLOUD.on)rput('salaries',o);audit('إضافة موظف');save();render();}
+
+/* ---- السحبيات الشخصية ---- */
+PAGES.withdrawals=function(){
+  const W=rows('withdrawals');
+  const wc=W.filter(r=>r.method==='كاش').reduce((s,r)=>s+num(r.amount),0),wn=W.filter(r=>String(r.method).includes('شبكة')).reduce((s,r)=>s+num(r.amount),0);
+  return head('السحبيات الشخصية',periodLabel(),
+    can('edit')?`<button class="btn sm no-print" onclick="addWithdraw()">➕ سحبية</button>`:'')
+  +`<div class="mini-stat" style="margin-bottom:14px"><div class="ms"><b>${money(wc)}</b><span>سحبيات كاش</span></div><div class="ms"><b>${money(wn)}</b><span>سحبيات شبكة</span></div><div class="ms"><b>${money(wc+wn)}</b><span>الإجمالي</span></div></div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>السبب / الاسم</th><th>طريقة الدفع</th><th>ملاحظات</th>${can('edit')?'<th></th>':''}</tr></thead><tbody>
+    ${W.length?W.map(r=>{const ed=can('edit');return `<tr>
+      <td>${ed?`<input type="date" value="${r.date||''}" onchange="upd('withdrawals','${r.id}','date',this.value)">`:r.date}</td>
+      <td>${ed?`<input type="number" value="${r.amount||''}" onchange="upd('withdrawals','${r.id}','amount',this.value)">`:n0(r.amount)}</td>
+      <td>${ed?`<input value="${r.reason||''}" onchange="upd('withdrawals','${r.id}','reason',this.value)">`:r.reason}</td>
+      <td>${ed?sel(METHODS,r.method,`upd('withdrawals','${r.id}','method',this.value)`):r.method}</td>
+      <td>${ed?`<input value="${r.notes||''}" onchange="upd('withdrawals','${r.id}','notes',this.value)">`:(r.notes||'')}</td>
+      ${ed?`<td><button class="row-del" onclick="del('withdrawals','${r.id}')">🗑️</button></td>`:''}</tr>`;}).join(''):`<tr><td colspan="6"><div class="empty"><div class="big">🏧</div>لا توجد سحبيات</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row"><td>الإجمالي</td><td>${n0(wc+wn)}</td><td colspan="${can('edit')?4:3}"></td></tr></tfoot></table></div>`;
+};
+function addWithdraw(){const o={id:uid(),branchId:S.branch,date:today(),amount:'',reason:'',method:'كاش',notes:''};DB.withdrawals.push(o);if(CLOUD.on)rput('withdrawals',o);audit('إضافة سحبية');save();render();}
+
+/* ---- المصروفات التشغيلية بالتفصيل ---- */
+PAGES.opex=function(){
+  const O=DB.budget.filter(b=>b.branchId===S.branch&&b.month===ym()&&b.kind==='opex');
+  const items=['بضاعة','إيجار','نثريات وصيانة','لواصق أمان','غاز','بترول','طباعة','غسيل زجاج','كهرباء','صيانة الباص','إنترنت','رسوم البنك'];
+  const c=calc();
+  return head('المصروفات التشغيلية بالتفصيل','ملخص بنود المصروفات التشغيلية للشهر')
+  +`<div class="two-col"><div class="card"><h3>📋 بنود المصروفات</h3>
+    ${items.map(it=>`<div class="rep-line"><span class="lbl">${it}</span><span class="val">${n0(c.byCat[it]||0)}</span></div>`).join('')}
+    <div class="rep-line tot"><span class="lbl">إجمالي المصروفات التشغيلية</span><span class="val">${money(c.opExp)}</span></div></div>
+    <div class="card"><h3>ℹ️ ملاحظة</h3><div class="info-box">تُحتسب بنود المصروفات التشغيلية تلقائياً من دفتر «المصروفات التفصيلية» حسب التصنيف. لإضافة بند، سجّله في صفحة المصروفات التفصيلية باختيار التصنيف المناسب، وسيظهر هنا مباشرة.</div>
+    <div class="chart-box sm" style="margin-top:14px"><canvas id="ch-opex"></canvas></div></div></div>`;
+};
+AFTER.opex=function(){const c=calc();const e=Object.entries(c.byCat).filter(([,v])=>v>0);mkChart('ch-opex',{type:'polarArea',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:['#1f6feb','#c9a227','#1b9e5a','#d64545','#7c4dff','#e0a92e','#0d47a1','#33c37d','#f06565','#9d7bff']}]},options:opts(true)});};
+
+/* ---- shared cell helpers ---- */
+function sel(arr,val,handler){return `<select onchange="${handler}">${arr.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;}
+function uid(){return 'r'+Date.now()+Math.random().toString(36).slice(2,7);}
+function upd(type,id,key,val){
+  const r=DB[type].find(x=>x.id===id);if(!r)return;
+  if(key==='date'&&type==='daily'){ if(DB.daily.some(x=>x!==r&&x.branchId===S.branch&&x.date===val)) toast('تنبيه: هذا التاريخ مُدخل مسبقاً (تكرار محتمل)','warn'); }
+  r[key]=val; if(CLOUD.on)rput(type,r); audit(`تعديل ${type}`); save();
+  // re-render totals live without losing focus for calc columns
+  if(['dashboard'].includes(S.page)||key==='date'||type==='daily'||type==='apps'||type==='salaries')render();
+  refreshNotifDot();
+}
+function del(type,id){confirmBox('تأكيد الحذف','هل تريد حذف هذا السجل نهائياً؟',()=>{DB[type]=DB[type].filter(x=>x.id!==id);if(CLOUD.on)rdel(type,id);audit(`حذف ${type}`);save();render();toast('تم الحذف');});}
+</script>
+<script>
+/* ================================================================
+   REPORTS
+================================================================ */
+function repLine(l,v,cls=''){return `<div class="rep-line"><span class="lbl">${l}</span><span class="val ${cls}">${v}</span></div>`;}
+function repTot(l,v,cls=''){return `<div class="rep-line tot"><span class="lbl">${l}</span><span class="val ${cls}">${v}</span></div>`;}
+
+/* التقرير اليومي — لفرع واحد أو عدة فروع */
+function dailyReportData(){
+  // sanitize selection
+  if(!S.repBranches||!S.repBranches.length) S.repBranches=[S.branch];
+  S.repBranches=S.repBranches.filter(id=>DB.branches.some(b=>b.id===id));
+  if(!S.repBranches.length) S.repBranches=[S.branch];
+  let recs=[];
+  S.repBranches.forEach(bid=>{
+    const bn=DB.branches.find(b=>b.id===bid).name;
+    DB.daily.filter(r=>r.branchId===bid&&inPeriod(r.date)).forEach(r=>{
+      const rev=num(r.cash)+num(r.network),exp=num(r.cashExp)+num(r.netExp),net=rev-exp-num(r.withdrawals)-num(r.salaries);
+      recs.push({bid,bname:bn,date:r.date,day:DAYS[new Date(r.date).getDay()],cash:num(r.cash),network:num(r.network),rev,exp,wd:num(r.withdrawals),sal:num(r.salaries),net});
+    });
+  });
+  if((S.repMode||'detail')==='combined'){
+    const map={};
+    recs.forEach(r=>{const k=r.date;if(!map[k])map[k]={date:r.date,day:r.day,cash:0,network:0,rev:0,exp:0,wd:0,sal:0,net:0,bname:'كل الفروع المحددة'};['cash','network','rev','exp','wd','sal','net'].forEach(f=>map[k][f]+=r[f]);});
+    recs=Object.values(map);
+  }
+  recs.sort((a,b)=>(a.date||'').localeCompare(b.date)||(a.bname||'').localeCompare(b.bname||''));
+  return recs;
+}
+PAGES['rep-daily']=function(){
+  const multi=(S.repBranches&&S.repBranches.length>1);
+  const recs=dailyReportData(), showBranch=multi&&(S.repMode||'detail')==='detail';
+  const T=recs.reduce((a,r)=>({rev:a.rev+r.rev,exp:a.exp+r.exp,wd:a.wd+r.wd,sal:a.sal+r.sal,net:a.net+r.net}),{rev:0,exp:0,wd:0,sal:0,net:0});
+  const chks=DB.branches.map(b=>`<label class="pill" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" ${S.repBranches.includes(b.id)?'checked':''} onchange="toggleRepBranch('${b.id}')"> ${b.name}</label>`).join('');
+  const actions=`<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة / PDF</button><button class="btn sm no-print" onclick="exportDailyExcel()">📊 Excel</button><button class="btn ghost sm no-print" onclick="exportDailyReportCSV()">⬇️ CSV</button>`;
+  const selNames=S.repBranches.map(id=>DB.branches.find(b=>b.id===id).name).join('، ');
+  return head('التقرير المالي اليومي',periodLabel()+' — '+(multi?`${S.repBranches.length} فروع`:'فرع واحد'),actions)
+  +`<div class="card no-print" style="margin-bottom:14px"><h3 style="margin-bottom:10px">🏢 اختر الفرع أو الفروع</h3>
+     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${chks}
+     <span style="margin-inline-start:auto"></span>
+     <button class="btn ghost sm" onclick="repSelectAll()">تحديد الكل</button>
+     ${multi?`<select class="pill" style="border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);padding:6px 10px" onchange="S.repMode=this.value;render()">
+        <option value="detail" ${(S.repMode||'detail')==='detail'?'selected':''}>عرض تفصيلي حسب الفرع</option>
+        <option value="combined" ${S.repMode==='combined'?'selected':''}>عرض مجمّع حسب اليوم</option></select>`:''}</div></div>
+  <div class="print-only" style="text-align:center;margin-bottom:10px"><h2>${DB.settings.company} — التقرير اليومي</h2><div>${periodLabel()} · الفروع: ${selNames}</div></div>
+  <div class="grid kpi-grid" style="margin-bottom:16px">
+    ${kpi('إجمالي الإيرادات',money(T.rev),'💵','tone-green')}${kpi('إجمالي المصروفات',money(T.exp),'💸','tone-red')}${kpi('صافي الفترة',money(T.net),'📈',T.net>=0?'tone-blue':'tone-red')}${kpi('عدد الأيام',n0(new Set(recs.map(r=>r.date)).size),'📅','tone-amber')}</div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>التاريخ</th><th>اليوم</th>${showBranch?'<th>الفرع</th>':''}<th>كاش</th><th>شبكة</th><th>الإيرادات</th><th>المصروفات</th><th>السحبيات</th><th>الرواتب</th><th>صافي اليوم</th><th>الحالة</th></tr></thead><tbody>
+  ${recs.length?recs.map(r=>`<tr><td>${r.date}</td><td>${r.day}</td>${showBranch?`<td><b>${r.bname}</b></td>`:''}<td>${n0(r.cash)}</td><td>${n0(r.network)}</td><td>${n0(r.rev)}</td><td>${n0(r.exp)}</td><td>${n0(r.wd)}</td><td>${n0(r.sal)}</td><td class="${r.net>=0?'pos':'neg'}">${n0(r.net)}</td><td>${r.rev?(r.net>=0?'<span class="tag g">فائض</span>':'<span class="tag r">عجز</span>'):'—'}</td></tr>`).join(''):`<tr><td colspan="${showBranch?11:10}"><div class="empty"><div class="big">📅</div>لا توجد بيانات لهذه الفترة</div></td></tr>`}
+  </tbody><tfoot><tr class="total-row"><td colspan="${showBranch?5:4}">الإجمالي</td><td>${n0(T.rev)}</td><td>${n0(T.exp)}</td><td>${n0(T.wd)}</td><td>${n0(T.sal)}</td><td class="${T.net>=0?'pos':'neg'}">${n0(T.net)}</td><td></td></tr></tfoot></table></div>
+  ${multi&&(S.repMode||'detail')==='detail'?`<div class="card" style="margin-top:16px"><h3>📊 ملخص كل فرع</h3><div class="table-wrap"><table class="dt"><thead><tr><th>الفرع</th><th>الإيرادات</th><th>المصروفات</th><th>الصافي</th></tr></thead><tbody>
+    ${S.repBranches.map(id=>{const rr=recs.filter(r=>r.bid===id);const rev=rr.reduce((s,r)=>s+r.rev,0),ex=rr.reduce((s,r)=>s+r.exp,0),nt=rr.reduce((s,r)=>s+r.net,0);return `<tr><td><b>${DB.branches.find(b=>b.id===id).name}</b></td><td>${n0(rev)}</td><td>${n0(ex)}</td><td class="${nt>=0?'pos':'neg'}">${n0(nt)}</td></tr>`;}).join('')}
+  </tbody></table></div></div>`:''}`;
+};
+function toggleRepBranch(id){ if(!S.repBranches)S.repBranches=[S.branch]; if(S.repBranches.includes(id))S.repBranches=S.repBranches.filter(x=>x!==id); else S.repBranches.push(id); if(!S.repBranches.length)S.repBranches=[id]; render(); }
+function repSelectAll(){ S.repBranches=DB.branches.map(b=>b.id); render(); }
+function exportDailyExcel(){
+  const recs=dailyReportData(),multi=S.repBranches.length>1,showBranch=multi&&(S.repMode||'detail')==='detail';
+  const rows2=recs.map(r=>{const o={'التاريخ':r.date,'اليوم':r.day};if(showBranch)o['الفرع']=r.bname;Object.assign(o,{'كاش':r.cash,'شبكة':r.network,'الإيرادات':r.rev,'المصروفات':r.exp,'السحبيات':r.wd,'الرواتب':r.sal,'صافي اليوم':r.net,'الحالة':r.rev?(r.net>=0?'فائض':'عجز'):'—'});return o;});
+  const wb=XLSX.utils.book_new();
+  const header=[[DB.settings.company+' — التقرير اليومي'],[periodLabel()],['الفروع: '+S.repBranches.map(id=>DB.branches.find(b=>b.id===id).name).join('، ')],[]];
+  const ws=XLSX.utils.aoa_to_sheet(header); XLSX.utils.sheet_add_json(ws,rows2,{origin:-1});
+  XLSX.utils.book_append_sheet(wb,ws,'التقرير اليومي');
+  XLSX.writeFile(wb,`التقرير_اليومي_${ym()}.xlsx`); audit('تصدير التقرير اليومي Excel'); toast('تم تصدير Excel');
+}
+function exportDailyReportCSV(){
+  const recs=dailyReportData();if(!recs.length){toast('لا توجد بيانات','warn');return;}
+  const keys=['date','day','bname','cash','network','rev','exp','wd','sal','net'];
+  const hd=['التاريخ','اليوم','الفرع','كاش','شبكة','الإيرادات','المصروفات','السحبيات','الرواتب','الصافي'];
+  const csv='﻿'+[hd.join(',')].concat(recs.map(r=>keys.map(k=>`"${r[k]??''}"`).join(','))).join('\n');
+  dl(new Blob([csv],{type:'text/csv'}),`التقرير_اليومي_${ym()}.csv`); toast('تم تصدير CSV');
+}
+/* تقرير 10 أيام */
+PAGES['rep-ten']=function(){
+  const t=tenDay();
+  return head('تقرير الفترات العشرية',periodLabel())
+  +`<div class="table-wrap"><table class="dt"><thead><tr><th>الفترة</th><th>كاش</th><th>شبكة</th><th>الإيرادات</th><th>المصروفات</th><th>الرواتب</th><th>السحبيات</th><th>الصافي</th><th>الحالة</th></tr></thead><tbody>
+  ${t.map(p=>`<tr><td>${p.label}</td><td>${n0(p.cash)}</td><td>${n0(p.net)}</td><td>${n0(p.rev)}</td><td>${n0(p.exp)}</td><td>${n0(p.sal)}</td><td>${n0(p.wd)}</td><td class="${p.net_>=0?'pos':'neg'}">${n0(p.net_)}</td><td>${p.net_>=0?'<span class="tag g">فائض ✅</span>':'<span class="tag r">عجز ❌</span>'}</td></tr>`).join('')}
+  <tr class="total-row"><td>الإجمالي الشهري</td><td>${n0(t.reduce((s,p)=>s+p.cash,0))}</td><td>${n0(t.reduce((s,p)=>s+p.net,0))}</td><td>${n0(t.reduce((s,p)=>s+p.rev,0))}</td><td>${n0(t.reduce((s,p)=>s+p.exp,0))}</td><td>${n0(t.reduce((s,p)=>s+p.sal,0))}</td><td>${n0(t.reduce((s,p)=>s+p.wd,0))}</td><td>${n0(t.reduce((s,p)=>s+p.net_,0))}</td><td></td></tr>
+  </tbody></table></div>`;
+};
+/* التقرير الشهري */
+PAGES['rep-month']=function(){
+  const c=calc();
+  return head('التقرير الشهري الشامل',periodLabel(),`<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة</button><button class="btn sm no-print" onclick="exportExcel()">📊 Excel</button>`)
+  +`<div class="rep-grid">
+    <div class="card"><div class="rep-head">💵 الإيرادات</div>
+      ${repLine('إجمالي مبيعات الكاش',money(c.cash))}${repLine('إجمالي مبيعات الشبكة',money(c.network))}${repTot('إجمالي الدخل',money(c.totalSales),'pos')}</div>
+    <div class="card"><div class="rep-head">💸 المصروفات</div>
+      ${repLine('المصروفات التشغيلية',money(c.opExp))}${repLine('إجمالي الرواتب',money(c.salPaid))}${repLine('السحبيات الشخصية',money(c.wTotal))}${repTot('إجمالي المصروفات',money(c.totalExpensesAll),'neg')}</div>
+    <div class="card"><div class="rep-head">⚖️ صافي النتيجة</div>
+      ${repLine('صافي الربح / الخسارة',money(c.netRemaining),c.netRemaining>=0?'pos':'neg')}${repLine('رصيد الصندوق كاش',money(c.cashBalance))}${repLine('رصيد الشبكة',money(c.netBalance))}</div>
+    <div class="card"><div class="rep-head">📊 إحصاءات</div>
+      ${repLine('أعلى يوم مبيعات كاش',c.bestDay?c.bestDay.date+' ('+n0(c.bestDay.cash)+')':'—')}${repLine('أقل يوم مبيعات كاش',c.worstDay?c.worstDay.date+' ('+n0(c.worstDay.cash)+')':'—')}${repLine('عدد أيام العمل',n0(c.daysWorked))}${repLine('متوسط المبيعات اليومية',money(c.avgDaily))}</div>
+  </div>`;
+};
+/* التقرير السنوي */
+PAGES['rep-annual']=function(){
+  const A=annual();const T=A.reduce((a,m)=>({rev:a.rev+m.rev,opExp:a.opExp+m.opExp,sal:a.sal+m.sal,wt:a.wt+m.wt,netv:a.netv+m.netv}),{rev:0,opExp:0,sal:0,wt:0,netv:0});
+  return head('التقرير السنوي',curBranch().name+' — سنة '+S.year,`<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة</button>`)
+  +`<div class="grid kpi-grid" style="margin-bottom:16px">
+    ${kpi('إيرادات السنة',money(T.rev),'💵','tone-green')}${kpi('مصروفات تشغيلية',money(T.opExp),'💸','tone-red')}${kpi('رواتب السنة',money(T.sal),'👨‍🍳','tone-amber')}${kpi('صافي السنة',money(T.netv),'📈','tone-blue')}</div>
+  <div class="card" style="margin-bottom:16px"><h3>📈 الأداء الشهري خلال العام</h3><div class="chart-box"><canvas id="ch-year"></canvas></div></div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>الشهر</th><th>كاش</th><th>شبكة</th><th>الإيرادات</th><th>المصروفات التشغيلية</th><th>الرواتب</th><th>السحبيات</th><th>الصافي</th></tr></thead><tbody>
+  ${A.map(m=>`<tr><td>${m.name}</td><td>${n0(m.cash)}</td><td>${n0(m.net)}</td><td>${n0(m.rev)}</td><td>${n0(m.opExp)}</td><td>${n0(m.sal)}</td><td>${n0(m.wt)}</td><td class="${m.netv>=0?'pos':'neg'}">${n0(m.netv)}</td></tr>`).join('')}
+  <tr class="total-row"><td>الإجمالي</td><td colspan="2"></td><td>${n0(T.rev)}</td><td>${n0(T.opExp)}</td><td>${n0(T.sal)}</td><td>${n0(T.wt)}</td><td>${n0(T.netv)}</td></tr>
+  </tbody></table></div>`;
+};
+AFTER['rep-annual']=function(){const A=annual();mkChart('ch-year',{type:'bar',data:{labels:A.map(m=>m.name),datasets:[{label:'الإيرادات',data:A.map(m=>m.rev),backgroundColor:cvar('--green'),borderRadius:5},{label:'المصروفات',data:A.map(m=>m.expAll),backgroundColor:cvar('--red'),borderRadius:5},{label:'الصافي',type:'line',data:A.map(m=>m.netv),borderColor:cvar('--primary'),tension:.35}]},options:opts(true)});};
+
+/* قائمة الأرباح والخسائر */
+PAGES.pl=function(){
+  const c=calc();
+  return head('قائمة الأرباح والخسائر (P&L)',periodLabel(),`<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة</button>`)
+  +`<div class="card" style="max-width:640px"><div class="rep-head">قائمة الدخل — ${periodLabel()}</div>
+    ${repLine('الإيرادات — مبيعات كاش',money(c.cash))}${repLine('الإيرادات — مبيعات شبكة',money(c.network))}${repTot('إجمالي الإيرادات',money(c.totalSales),'pos')}
+    <div style="height:10px"></div>
+    ${repLine('(−) تكلفة التشغيل والمشتريات',money(c.opExp))}${repLine('(−) الرواتب والأجور',money(c.salPaid))}${repLine('(−) المسحوبات الشخصية',money(c.wTotal))}${repTot('إجمالي التكاليف والمصروفات',money(c.totalExpensesAll),'neg')}
+    <div style="height:10px"></div>
+    ${repTot('صافي الربح / الخسارة',money(c.netRemaining),c.netRemaining>=0?'pos':'neg')}
+    ${repLine('هامش صافي الربح',pct(c.profitMargin),c.profitMargin>=0?'pos':'neg')}</div>`;
+};
+/* التدفقات النقدية */
+PAGES.cashflow=function(){
+  const c=calc();
+  return head('قائمة التدفقات النقدية',periodLabel())
+  +`<div class="two-col">
+    <div class="card"><div class="rep-head">💵 التدفق النقدي — الصندوق (كاش)</div>
+      ${repLine('الداخل: مبيعات كاش',money(c.cash),'pos')}${repLine('الخارج: مصروفات كاش',money(c.cashExp),'neg')}${repLine('الخارج: رواتب',money(c.salPaid),'neg')}${repLine('الخارج: سحبيات كاش',money(c.wCash),'neg')}${repTot('صافي رصيد الصندوق',money(c.cashBalance),c.cashBalance>=0?'pos':'neg')}</div>
+    <div class="card"><div class="rep-head">💳 التدفق النقدي — الشبكة</div>
+      ${repLine('الداخل: مبيعات شبكة',money(c.network),'pos')}${repLine('الخارج: مصروفات شبكة',money(c.netExp),'neg')}${repLine('الخارج: سحبيات شبكة',money(c.wNet),'neg')}${repTot('صافي رصيد الشبكة',money(c.netBalance),c.netBalance>=0?'pos':'neg')}</div></div>
+  <div class="card" style="margin-top:16px"><div class="rep-head">📌 الموقف النقدي الإجمالي</div>
+    ${repLine('إجمالي الداخل النقدي',money(c.totalSales),'pos')}${repLine('إجمالي الخارج النقدي',money(c.cashOut+c.netOut),'neg')}${repTot('صافي الموقف النقدي',money(c.cashBalance+c.netBalance),(c.cashBalance+c.netBalance)>=0?'pos':'neg')}</div>`;
+};
+/* تحليل الإيرادات */
+PAGES.revenue=function(){
+  const c=calc();
+  return head('تحليل الإيرادات',periodLabel())
+  +`<div class="grid kpi-grid" style="margin-bottom:16px">${kpi('إجمالي الإيرادات',money(c.totalSales),'💵','tone-green')}${kpi('مبيعات الكاش',money(c.cash),'💰','tone-amber',pct(c.totalSales?c.cash/c.totalSales:0))}${kpi('مبيعات الشبكة',money(c.network),'💳','tone-blue',pct(c.totalSales?c.network/c.totalSales:0))}${kpi('تطبيقات التوصيل',money(c.appsTotal),'🛵','tone-purple')}</div>
+  <div class="two-col"><div class="card"><h3>💰 كاش مقابل شبكة</h3><div class="chart-box sm"><canvas id="ch-rev1"></canvas></div></div>
+  <div class="card"><h3>🛵 توزيع مبيعات التطبيقات</h3><div class="chart-box sm"><canvas id="ch-rev2"></canvas></div></div></div>`;
+};
+AFTER.revenue=function(){const c=calc();mkChart('ch-rev1',{type:'doughnut',data:{labels:['كاش','شبكة'],datasets:[{data:[c.cash,c.network],backgroundColor:[cvar('--amber'),cvar('--primary')]}]},options:opts(true)});const e=Object.entries(c.appsByApp).filter(([,v])=>v>0);mkChart('ch-rev2',{type:'pie',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:['#1f6feb','#c9a227','#1b9e5a','#d64545','#7c4dff','#e0a92e']}]},options:opts(true)});};
+
+/* تحليل المصروفات */
+PAGES.expense=function(){
+  const c=calc();const cats=Object.entries(c.byCat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  return head('تحليل المصروفات',periodLabel())
+  +`<div class="grid kpi-grid" style="margin-bottom:16px">${kpi('إجمالي المصروفات',money(c.totalExpensesAll),'💸','tone-red')}${kpi('تشغيلية',money(c.opExp),'📋','tone-amber')}${kpi('رواتب',money(c.salPaid),'👨‍🍳','tone-purple')}${kpi('سحبيات شخصية',money(c.wTotal),'🏧','tone-blue')}</div>
+  <div class="two-col"><div class="card"><h3>🔻 المصروفات حسب التصنيف</h3><div class="chart-box"><canvas id="ch-exp1"></canvas></div></div>
+  <div class="card"><h3>📊 أكبر بنود المصروفات</h3>${cats.length?cats.map(([k,v])=>`<div class="rep-line"><span class="lbl">${k}</span><span class="val">${money(v)} <span style="color:var(--muted);font-size:12px">(${pct(c.ledgerTotal?v/c.ledgerTotal:0)})</span></span></div>`).join(''):'<div class="empty">لا توجد مصروفات مصنّفة</div>'}</div></div>`;
+};
+AFTER.expense=function(){const c=calc();const e=Object.entries(c.byCat).filter(([,v])=>v>0);mkChart('ch-exp1',{type:'bar',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:cvar('--red'),borderRadius:6}]},options:opts()});};
+</script>
+<script>
+/* ================================================================
+   EXECUTIVE / ANALYSIS / BRANCHES / SYSTEM
+================================================================ */
+/* الملخص التنفيذي */
+PAGES.exec=function(){
+  const c=calc(),A=annual();const ytd=A.reduce((s,m)=>s+m.rev,0),ytdNet=A.reduce((s,m)=>s+m.netv,0);
+  const health=c.netRemaining>=0&&c.profitMargin>0.1?['ممتاز','g']:c.netRemaining>=0?['جيد','a']:['يحتاج مراجعة','r'];
+  return head('الملخص التنفيذي',curBranch().name+' — '+periodLabel())
+  +`<div class="card" style="margin-bottom:16px;border-right:4px solid var(--primary)"><h3>🎯 الحالة المالية العامة: <span class="tag ${health[1]}">${health[0]}</span></h3>
+    <p style="color:var(--text-2)">حقق الفرع إيرادات إجمالية قدرها <b>${money(c.totalSales)}</b> خلال ${periodLabel()}، بصافي نتيجة <b class="${c.netRemaining>=0?'pos':'neg'}">${money(c.netRemaining)}</b> وهامش ربح <b>${pct(c.profitMargin)}</b>. بلغت المصروفات التشغيلية ${pct(c.expRatio)} من الإيرادات، والرواتب ${pct(c.salRatio)}.</p></div>
+  <div class="grid kpi-grid" style="margin-bottom:16px">
+    ${kpi('صافي الشهر',money(c.netRemaining),'📈',c.netRemaining>=0?'tone-green':'tone-red')}
+    ${kpi('إيراد السنة حتى تاريخه',money(ytd),'💵','tone-blue')}
+    ${kpi('صافي السنة حتى تاريخه',money(ytdNet),'🏆','tone-purple')}
+    ${kpi('متوسط المبيعات اليومية',money(c.avgDaily),'📅','tone-amber')}</div>
+  <div class="two-col"><div class="card"><h3>✅ أبرز المؤشرات</h3>
+    ${repLine('أعلى يوم مبيعات',c.bestDay?c.bestDay.date:'—')}${repLine('عدد أيام العمل',n0(c.daysWorked))}${repLine('نسبة المصروفات للإيراد',pct(c.expRatio))}${repLine('رصيد نقدي إجمالي',money(c.cashBalance+c.netBalance))}</div>
+  <div class="card"><h3>⚠️ نقاط الانتباه</h3>${(checkAlerts().slice(0,6).map(([i,t])=>`<div class="rep-line"><span class="lbl">${i} ${t}</span></div>`).join(''))||'<div class="empty">لا توجد ملاحظات</div>'}</div></div>`;
+};
+/* النسب المالية */
+PAGES.ratios=function(){
+  const c=calc();
+  const R=[['هامش صافي الربح',pct(c.profitMargin),'صافي الربح ÷ الإيرادات','معدل ربحية النشاط'],
+    ['نسبة المصروفات التشغيلية',pct(c.expRatio),'المصروفات التشغيلية ÷ الإيرادات','كفاءة التحكم بالتكاليف'],
+    ['نسبة الرواتب',pct(c.salRatio),'الرواتب ÷ الإيرادات','عبء الأجور'],
+    ['نسبة السحبيات الشخصية',pct(c.totalSales?c.wTotal/c.totalSales:0),'السحبيات ÷ الإيرادات','السحب من رأس المال'],
+    ['نسبة مبيعات الشبكة',pct(c.totalSales?c.network/c.totalSales:0),'الشبكة ÷ الإيرادات','اعتماد المدفوعات الإلكترونية'],
+    ['العائد النقدي الصافي',pct(c.netRatio),'(الإيراد − كل المصروفات) ÷ الإيراد','الكفاءة النقدية الكلية']];
+  return head('النسب المالية',periodLabel())
+  +`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+    ${R.map(([n,v,f,d])=>`<div class="card"><div class="k-label">${n}</div><div class="k-val" style="font-size:30px;color:var(--primary)">${v}</div><div class="info-box" style="margin-top:10px;font-size:12.5px"><b>الصيغة:</b> ${f}<br><b>الدلالة:</b> ${d}</div></div>`).join('')}</div>`;
+};
+/* الموازنة مقابل الفعلي */
+PAGES.budget=function(){
+  const c=calc();const b=DB.budget.find(x=>x.branchId===S.branch&&x.month===ym()&&x.kind==='plan')||{revenue:'',expenses:'',salaries:''};
+  const line=(l,plan,act)=>{const p=num(plan),a=num(act),v=a-p,vp=p?v/p:0;return `<tr><td>${l}</td><td><input type="number" value="${plan||''}" onchange="setBudget('${l==='الإيرادات'?'revenue':l==='المصروفات التشغيلية'?'expenses':'salaries'}',this.value)" style="width:120px"></td><td>${n0(a)}</td><td class="${v>=0?'pos':'neg'}">${n0(v)}</td><td class="${vp>=0?'pos':'neg'}">${pct(vp)}</td></tr>`;};
+  return head('الموازنة التقديرية مقابل الفعلي',periodLabel())
+  +`<div class="info-box no-print" style="margin-bottom:14px">💡 أدخل المستهدف (الموازنة) لكل بند وقارنه بالأداء الفعلي المحسوب تلقائياً.</div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>البند</th><th>المستهدف (موازنة)</th><th>الفعلي</th><th>الانحراف</th><th>نسبة الانحراف</th></tr></thead><tbody>
+    ${line('الإيرادات',b.revenue,c.totalSales)}
+    ${line('المصروفات التشغيلية',b.expenses,c.opExp)}
+    ${line('الرواتب',b.salaries,c.salPaid)}
+  </tbody></table></div>`;
+};
+function setBudget(key,val){let b=DB.budget.find(x=>x.branchId===S.branch&&x.month===ym()&&x.kind==='plan');if(!b){b={id:uid(),branchId:S.branch,month:ym(),kind:'plan',revenue:'',expenses:'',salaries:''};DB.budget.push(b);}b[key]=val;if(CLOUD.on)rput('budget',b);audit('تعديل الموازنة');save();render();}
+
+/* تحليل الاتجاهات */
+PAGES.trend=function(){const A=annual();return head('تحليل الاتجاهات',curBranch().name+' — '+S.year)
+  +`<div class="card" style="margin-bottom:16px"><h3>📉 اتجاه الإيرادات والصافي عبر الأشهر</h3><div class="chart-box"><canvas id="ch-t1"></canvas></div></div>
+  <div class="card"><h3>📊 نمو الإيرادات الشهري</h3><div class="chart-box sm"><canvas id="ch-t2"></canvas></div></div>`;};
+AFTER.trend=function(){const A=annual();mkChart('ch-t1',{type:'line',data:{labels:A.map(m=>m.name),datasets:[{label:'الإيرادات',data:A.map(m=>m.rev),borderColor:cvar('--green'),backgroundColor:'rgba(27,158,90,.1)',fill:true,tension:.35},{label:'الصافي',data:A.map(m=>m.netv),borderColor:cvar('--primary'),tension:.35}]},options:opts(true)});
+  const g=A.map((m,i)=>i===0||A[i-1].rev===0?0:(m.rev-A[i-1].rev)/A[i-1].rev*100);mkChart('ch-t2',{type:'bar',data:{labels:A.map(m=>m.name),datasets:[{data:g,backgroundColor:g.map(v=>v>=0?cvar('--green'):cvar('--red')),borderRadius:5}]},options:opts()});};
+
+/* التحليل المقارن */
+PAGES.compare=function(){
+  const C=consolidated();
+  return head('التحليل المقارن','مقارنة الفروع — '+periodLabel())
+  +`<div class="card" style="margin-bottom:16px"><h3>🔍 مقارنة الأداء بين الفروع</h3><div class="chart-box"><canvas id="ch-cmp"></canvas></div></div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>الفرع</th><th>الإيرادات</th><th>المصروفات</th><th>الرواتب</th><th>الصافي</th><th>هامش الربح</th></tr></thead><tbody>
+  ${C.map(x=>`<tr><td><b>${x.branch.name}</b></td><td>${n0(x.totalSales)}</td><td>${n0(x.totalExpensesAll)}</td><td>${n0(x.salPaid)}</td><td class="${x.netRemaining>=0?'pos':'neg'}">${n0(x.netRemaining)}</td><td>${pct(x.profitMargin)}</td></tr>`).join('')}</tbody></table></div>`;
+};
+AFTER.compare=function(){const C=consolidated();mkChart('ch-cmp',{type:'bar',data:{labels:C.map(x=>x.branch.name),datasets:[{label:'الإيرادات',data:C.map(x=>x.totalSales),backgroundColor:cvar('--green'),borderRadius:5},{label:'المصروفات',data:C.map(x=>x.totalExpensesAll),backgroundColor:cvar('--red'),borderRadius:5},{label:'الصافي',data:C.map(x=>x.netRemaining),backgroundColor:cvar('--primary'),borderRadius:5}]},options:opts(true)});};
+
+/* أداء الفروع */
+PAGES['branch-perf']=function(){
+  const C=consolidated();
+  return head('أداء الفروع',periodLabel())
+  +`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+    ${C.map(x=>`<div class="card"><h3>🏢 ${x.branch.name}</h3>
+      ${repLine('الإيرادات',money(x.totalSales),'pos')}${repLine('المصروفات',money(x.totalExpensesAll),'neg')}${repLine('الرواتب',money(x.salPaid))}${repTot('الصافي',money(x.netRemaining),x.netRemaining>=0?'pos':'neg')}
+      <div class="mini-stat" style="margin-top:12px"><div class="ms"><b>${pct(x.profitMargin)}</b><span>هامش الربح</span></div><div class="ms"><b>${n0(x.daysWorked)}</b><span>أيام العمل</span></div></div></div>`).join('')}</div>`;
+};
+/* التقرير الموحّد */
+PAGES.consolidated=function(){
+  const C=consolidated();const T=C.reduce((a,x)=>({rev:a.rev+x.totalSales,exp:a.exp+x.totalExpensesAll,sal:a.sal+x.salPaid,net:a.net+x.netRemaining,cash:a.cash+x.cashBalance,netb:a.netb+x.netBalance}),{rev:0,exp:0,sal:0,net:0,cash:0,netb:0});
+  return head('التقرير المالي الموحّد','جميع الفروع — '+periodLabel(),`<button class="btn ghost sm no-print" onclick="window.print()">🖨️ طباعة</button>`)
+  +`<div class="grid kpi-grid" style="margin-bottom:16px">${kpi('إجمالي إيرادات المجموعة',money(T.rev),'💵','tone-green')}${kpi('إجمالي المصروفات',money(T.exp),'💸','tone-red')}${kpi('صافي المجموعة',money(T.net),'📈','tone-blue')}${kpi('إجمالي الأرصدة النقدية',money(T.cash+T.netb),'🏦','tone-amber')}</div>
+  <div class="table-wrap"><table class="dt"><thead><tr><th>الفرع</th><th>الإيرادات</th><th>المصروفات</th><th>الرواتب</th><th>رصيد الكاش</th><th>رصيد الشبكة</th><th>الصافي</th></tr></thead><tbody>
+  ${C.map(x=>`<tr><td><b>${x.branch.name}</b></td><td>${n0(x.totalSales)}</td><td>${n0(x.totalExpensesAll)}</td><td>${n0(x.salPaid)}</td><td>${n0(x.cashBalance)}</td><td>${n0(x.netBalance)}</td><td class="${x.netRemaining>=0?'pos':'neg'}">${n0(x.netRemaining)}</td></tr>`).join('')}
+  <tr class="total-row"><td>الإجمالي الموحّد</td><td>${n0(T.rev)}</td><td>${n0(T.exp)}</td><td>${n0(T.sal)}</td><td>${n0(T.cash)}</td><td>${n0(T.netb)}</td><td>${n0(T.net)}</td></tr>
+  </tbody></table></div>`;
+};
+/* إدارة الفروع */
+PAGES.branches=function(){
+  if(!can('manage'))return noPerm();
+  return head('إدارة الفروع','أضف فروعاً غير محدودة دون تعديل أي صيغة',`<button class="btn sm" onclick="addBranch()">➕ فرع جديد</button>`)
+  +`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+    ${DB.branches.map(b=>`<div class="card"><h3>🏢 ${b.name}</h3><div class="k-sub">أُنشئ في ${b.created}</div>
+      <div style="margin-top:12px;display:flex;gap:8px"><button class="btn ghost sm" onclick="renameBranch('${b.id}')">✏️ تعديل</button>${DB.branches.length>1?`<button class="btn red sm" onclick="delBranch('${b.id}')">🗑️ حذف</button>`:''}</div></div>`).join('')}</div>`;
+};
+function addBranch(){promptBox('اسم الفرع الجديد','',v=>{if(!v)return;DB.branches.push({id:'br_'+Date.now(),name:v,created:today()});audit('إضافة فرع: '+v);save();buildSelectors();render();toast('تمت إضافة الفرع');});}
+function renameBranch(id){const b=DB.branches.find(x=>x.id===id);promptBox('تعديل اسم الفرع',b.name,v=>{if(!v)return;b.name=v;audit('تعديل فرع');save();buildSelectors();render();});}
+function delBranch(id){confirmBox('حذف الفرع','سيتم حذف الفرع وكل بياناته نهائياً. متابعة؟',()=>{['daily','expenses','apps','salaries','withdrawals','budget'].forEach(t=>DB[t]=DB[t].filter(r=>r.branchId!==id));DB.branches=DB.branches.filter(b=>b.id!==id);if(S.branch===id)S.branch=DB.branches[0].id;audit('حذف فرع');save();buildSelectors();render();toast('تم حذف الفرع');});}
+
+/* المستخدمون */
+PAGES.users=function(){
+  if(!can('manage'))return noPerm();
+  return head('المستخدمون والصلاحيات','إدارة حسابات الدخول والأدوار',`<button class="btn sm" onclick="addUser()">➕ مستخدم</button>`)
+  +`<div class="table-wrap"><table class="dt"><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الدور</th><th>الصلاحيات</th><th></th></tr></thead><tbody>
+  ${DB.users.map((u,i)=>`<tr><td>${u.name}</td><td>${u.u}</td><td><span class="tag b">${ROLES[u.role]}</span></td><td style="color:var(--muted);font-size:12px">${u.role==='admin'?'كامل الصلاحيات':u.role==='accountant'?'إدخال وتعديل البيانات':'عرض فقط'}</td><td>${i>0?`<button class="row-del" onclick="delUser('${u.u}')">🗑️</button>`:'<span class="tag g">أساسي</span>'}</td></tr>`).join('')}</tbody></table></div>
+  <div class="info-box" style="margin-top:14px"><b>الأدوار:</b> «مدير عام» صلاحيات كاملة تشمل الفروع والمستخدمين والنسخ · «محاسب» إدخال وتعديل البيانات والتقارير · «مشاهد» عرض التقارير فقط دون تعديل.</div>`;
+};
+function addUser(){promptBox('اسم المستخدم الجديد','',u=>{if(!u)return;if(DB.users.some(x=>x.u===u)){toast('الاسم مستخدم','err');return;}promptBox('الاسم الكامل','',name=>{promptBox('كلمة المرور','',p=>{promptBox('الدور (admin / accountant / viewer)','viewer',role=>{if(!ROLES[role])role='viewer';DB.users.push({u,p:p||'123456',name:name||u,role});audit('إضافة مستخدم');save();render();toast('تمت الإضافة');});});});});}
+function delUser(u){confirmBox('حذف المستخدم','متابعة الحذف؟',()=>{DB.users=DB.users.filter(x=>x.u!==u);audit('حذف مستخدم');save();render();});}
+
+/* سجل النشاط */
+PAGES.audit=function(){
+  return head('سجل النشاط (Audit Trail)','آخر '+DB.audit.length+' عملية',`<button class="btn ghost sm" onclick="clearAudit()">🧹 مسح السجل</button>`)
+  +`<div class="table-wrap"><table class="dt"><thead><tr><th>التوقيت</th><th>المستخدم</th><th>الفرع</th><th>العملية</th></tr></thead><tbody>
+  ${DB.audit.length?DB.audit.slice(0,200).map(a=>`<tr><td>${new Date(a.t).toLocaleString('ar-EG')}</td><td>${a.u}</td><td>${a.branch||'—'}</td><td>${a.action}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty">لا يوجد نشاط بعد</div></td></tr>'}</tbody></table></div>`;
+};
+function clearAudit(){if(!can('manage'))return noPerm2();confirmBox('مسح السجل','متابعة؟',()=>{DB.audit=[];save();render();});}
+function noPerm(){return `<div class="card"><div class="empty"><div class="big">🔒</div>لا تملك صلاحية الوصول لهذه الصفحة</div></div>`;}
+function noPerm2(){toast('لا تملك صلاحية','err');}
+</script>
+<script>
+/* ================================================================
+   BACKUP / EXPORT / SETTINGS / DOCS
+================================================================ */
+PAGES.backup=function(){
+  return head('النسخ الاحتياطي والاستعادة','حماية بياناتك واستعادتها بضغطة واحدة')
+  +`<div class="two-col">
+    <div class="card"><h3>💾 إنشاء نسخة احتياطية</h3><p style="color:var(--text-2);margin-bottom:14px">تصدير نسخة كاملة من كل بيانات النظام (كل الفروع، المستخدمين، السجل).</p>
+      <button class="btn block" onclick="downloadBackup()">⬇️ تنزيل نسخة احتياطية (JSON)</button>
+      <button class="btn ghost block" style="margin-top:10px" onclick="snapshot()">📸 حفظ لقطة داخلية</button>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13.5px"><input type="checkbox" ${DB.settings.autobackup?'checked':''} onchange="DB.settings.autobackup=this.checked;save();toast('تم الحفظ')"> تفعيل النسخ الاحتياطي التلقائي عند كل تعديل</label></div>
+    <div class="card"><h3>♻️ الاستعادة</h3><p style="color:var(--text-2);margin-bottom:14px">استعد بياناتك من ملف نسخة احتياطية سابق.</p>
+      <input type="file" id="restoreFile" accept=".json" class="field" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:12px;background:var(--surface-2)">
+      <button class="btn amber block" style="margin-top:10px" onclick="restoreBackup()">♻️ استعادة من ملف</button></div></div>
+  <div class="card" style="margin-top:16px"><h3>🗂️ اللقطات الداخلية المحفوظة</h3>
+    ${DB.backups.length?`<div class="table-wrap"><table class="dt"><thead><tr><th>التاريخ</th><th>الحجم</th><th>إجراءات</th></tr></thead><tbody>
+    ${DB.backups.map((b,i)=>`<tr><td>${new Date(b.t).toLocaleString('ar-EG')}</td><td>${(b.size/1024).toFixed(1)} ك.ب</td><td><button class="btn ghost sm" onclick="restoreSnap(${i})">استعادة</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">لا توجد لقطات محفوظة بعد</div>'}</div>`;
+};
+function downloadBackup(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});dl(blob,`نسخة_احتياطية_${today()}.json`);audit('تنزيل نسخة احتياطية');toast('تم إنشاء النسخة الاحتياطية');}
+function snapshot(){const s=JSON.stringify(DB);DB.backups.unshift({t:new Date().toISOString(),size:s.length,data:s});if(DB.backups.length>10)DB.backups.pop();save();render();toast('تم حفظ لقطة');}
+function autoBackup(){const last=DB.backups[0];const now=Date.now();if(!last||now-new Date(last.t).getTime()>3600000){}}
+function restoreSnap(i){confirmBox('استعادة اللقطة','سيتم استبدال كل البيانات الحالية. متابعة؟',()=>{const d=JSON.parse(DB.backups[i].data);Object.assign(DB,d);save();if(CLOUD.on)pushAll();buildSelectors();buildNav();go('dashboard');toast('تمت الاستعادة');});}
+function restoreBackup(){const f=document.getElementById('restoreFile').files[0];if(!f){toast('اختر ملفاً أولاً','err');return;}const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.branches)throw 0;confirmBox('تأكيد الاستعادة','سيتم استبدال جميع البيانات الحالية بالملف. متابعة؟',()=>{DB=d;save();if(CLOUD.on)pushAll();S.branch=DB.branches[0].id;buildSelectors();buildNav();go('dashboard');toast('تمت الاستعادة بنجاح');});}catch(err){toast('ملف غير صالح','err');}};r.readAsText(f);}
+
+/* ---- EXPORT: Excel (SheetJS) ---- */
+function exportExcel(){
+  const wb=XLSX.utils.book_new();const c=calc();
+  const dash=[[DB.settings.company+' — '+curBranch().name],['الفترة',periodLabel()],[],
+    ['ملخص الإيرادات'],['مبيعات كاش',c.cash],['مبيعات شبكة',c.network],['إجمالي الإيرادات',c.totalSales],[],
+    ['ملخص المصروفات'],['تشغيلية',c.opExp],['رواتب',c.salPaid],['سحبيات شخصية',c.wTotal],['إجمالي المصروفات',c.totalExpensesAll],[],
+    ['النتيجة'],['صافي المتبقي',c.netRemaining],['رصيد الكاش',c.cashBalance],['رصيد الشبكة',c.netBalance],['هامش الربح',c.profitMargin]];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dash),'لوحة التحكم');
+  const D=rows('daily');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(D.map(r=>{const o={التاريخ:r.date,كاش:num(r.cash),شبكة:num(r.network)};APPS.forEach(([k,l])=>o[l]=num(r[k]));o['إجمالي التطبيقات']=APPS.reduce((s,[k])=>s+num(r[k]),0);o['إجمالي المبيعات']=num(r.cash)+num(r.network);o['مصروفات كاش']=num(r.cashExp);o['مصروفات شبكة']=num(r.netExp);o['صافي اليوم']=num(r.cash)+num(r.network)-num(r.cashExp)-num(r.netExp)-num(r.withdrawals)-num(r.salaries);return o;})),'الإدخال اليومي');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows('expenses').map(r=>({التاريخ:r.date,البيان:r.name,التصنيف:r.category,الطريقة:r.method,المبلغ:num(r.amount)}))),'المصروفات');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows('salaries').map(r=>({الاسم:r.name,الوظيفة:r.position,'الأساسي':num(r.basic),المصروف:num(r.withdrawn),المتبقي:num(r.basic)-num(r.withdrawn)}))),'الرواتب');
+  XLSX.writeFile(wb,`تقرير_${curBranch().name}_${ym()}.xlsx`);audit('تصدير Excel');toast('تم تصدير ملف Excel');
+}
+function exportCSV(type){
+  const data=rows(type);if(!data.length){toast('لا توجد بيانات','warn');return;}
+  const keys=Object.keys(data[0]).filter(k=>!['id','branchId'].includes(k));
+  const csv='﻿'+[keys.join(',')].concat(data.map(r=>keys.map(k=>`"${r[k]??''}"`).join(','))).join('\n');
+  dl(new Blob([csv],{type:'text/csv'}),`${type}_${ym()}.csv`);audit('تصدير CSV');toast('تم تصدير CSV');
+}
+function dl(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+
+/* ---- إعدادات الشركة + السحابة ---- */
+PAGES.settings=function(){
+  if(!can('manage'))return noPerm();
+  const s=DB.settings;
+  return head('إعدادات الشركة','اسم الشركة يظهر في الشعار وجميع التقارير والملفات المصدّرة')
+  +`<div class="card" style="max-width:560px">
+    <div class="field"><label>اسم الشركة</label><input id="setCompany" value="${s.company||''}" placeholder="شركة الطيف الأولى"></div>
+    <div class="field"><label>عملة العرض</label><input id="setCurrency" value="${s.currency||'ريال'}" placeholder="ريال"></div>
+    <button class="btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+    <div class="info-box" style="margin-top:16px">يتم تطبيق الاسم الجديد فوراً على الشعار الجانبي، شاشة الدخول، رأس التقارير، وملفات Excel وPDF المصدّرة.</div>
+  </div>
+  <div class="card" style="max-width:560px;margin-top:16px"><h3>☁️ المزامنة السحابية (بيانات موحّدة لكل الأجهزة)</h3>
+    <div id="cloudStatus" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="cloudSetup()">🔗 اتصال / تغيير الإعدادات</button>
+      <button class="btn ghost" onclick="pushAll()">⬆️ رفع البيانات المحلية للسحابة</button>
+      <button class="btn red" onclick="disconnectCloud()">✖️ فصل السحابة</button>
+    </div>
+    <div class="info-box" style="margin-top:12px">عند الاتصال بمشروع Firebase الخاص بك، تُحفظ بيانات جميع الفروع في السحابة وتتزامن لحظياً بين كل الأجهزة والمستخدمين. راجع «دليل إعداد Firebase» المرفق. للتشغيل بدون سحابة، يبقى النظام يعمل ببيانات هذا الجهاز فقط.</div>
+  </div>`;
+};
+AFTER.settings=function(){updateCloudBadge();};
+function saveSettings(){
+  const co=document.getElementById('setCompany').value.trim()||'شركة الطيف الأولى';
+  DB.settings.company=co; DB.settings.currency=document.getElementById('setCurrency').value.trim()||'ريال';
+  audit('تعديل إعدادات الشركة'); save(); applyBranding(); render(); toast('تم حفظ الإعدادات وتحديث الاسم');
+}
+
+/* ---- دليل الاستخدام ---- */
+PAGES.docs=function(){
+  return head('دليل الاستخدام','توثيق احترافي لكل وحدة في النظام')
+  +`<div class="card doc" style="max-width:900px;line-height:1.9">
+    <p>نظام مالي تنفيذي متكامل لـ«شركة الطيف الأولى». تُدخل البيانات مرة واحدة، وتتحدث جميع التقارير والمؤشرات تلقائياً عبر محرك صيغ ديناميكي. تُحفظ البيانات محلياً في متصفحك، أو سحابياً عند تفعيل المزامنة.</p>
+    <h3>1) وحدات التشغيل اليومي</h3>
+    <h4>🧾 الإدخال اليومي</h4><p>القلب النابض للنظام. تُدخل لكل يوم: مبيعات الكاش، مبيعات الشبكة، مبالغ تطبيقات التوصيل، مصروفات الكاش، مصروفات الشبكة، السحبيات، الرواتب. تُحسب تلقائياً: <b>إجمالي المبيعات = كاش + شبكة</b>، <b>إجمالي التطبيقات = مجموع التطبيقات</b>، <b>إجمالي المصروفات = مصروفات كاش + شبكة</b>، <b>صافي اليوم = المبيعات − المصروفات − السحبيات − الرواتب</b>.</p>
+    <h4>💸 المصروفات التفصيلية</h4><p>دفتر يومية لكل مصروف مع تصنيفه وطريقة دفعه. يغذّي «تحليل المصروفات حسب التصنيف».</p>
+    <h4>🛵 تطبيقات التوصيل</h4><p>تُدخل مبالغ كل تطبيق (هنجر، كيتا، نينجا، مرسول، جاهز، تويو) مباشرةً ضمن صف اليوم في «الإدخال اليومي» لكل فرع، وصفحة التطبيقات تعرض تحليلاً وحصصاً وترتيباً.</p>
+    <h4>👨‍🍳 كشف الرواتب</h4><p>لكل موظف: الراتب الأساسي، المصروف، و<b>المتبقي = الأساسي − المصروف</b>.</p>
+    <h4>🏧 السحبيات الشخصية</h4><p>تُقسّم آلياً إلى سحبيات كاش وشبكة، وتُخصم من الأرصدة المقابلة.</p>
+    <h3>2) التقارير المالية</h3>
+    <p><b>اليومي</b> (لفرع واحد أو عدة فروع، تفصيلي أو مجمّع مع طباعة PDF وExcel)، <b>10 أيام</b>، <b>الشهري</b>، <b>السنوي</b>، <b>الأرباح والخسائر</b>، <b>التدفقات النقدية</b>، <b>تحليل الإيرادات والمصروفات</b> — كلها مشتقة تلقائياً.</p>
+    <h3>3) التحليل التنفيذي</h3>
+    <p><b>الملخص التنفيذي</b>، <b>النسب المالية</b>، <b>الموازنة مقابل الفعلي</b>، <b>تحليل الاتجاهات</b>، <b>التحليل المقارن</b> بين الفروع.</p>
+    <h3>4) إدارة الفروع</h3>
+    <p>أضف فروعاً <b>غير محدودة</b> دون تعديل أي صيغة. تقرير <b>موحّد</b> لكل الفروع ولوحة <b>مقارنة</b>.</p>
+    <h3>5) النظام والأمان والسحابة</h3>
+    <p><b>مصادقة</b> بأدوار (مدير عام / محاسب / مشاهد). <b>سجل نشاط</b> يوثّق كل عملية. <b>نسخ احتياطي</b> تنزيل/استعادة/لقطات. <b>تصدير</b> Excel وCSV وطباعة PDF. <b>مزامنة سحابية اختيارية</b> عبر Firebase لتوحيد بيانات كل الفروع لحظياً بين الأجهزة.</p>
+    <h3>6) الأتمتة والتنبيهات</h3>
+    <p>يكشف النظام: البيانات الناقصة، التواريخ المكررة، أيام بلا مصروفات، حالات العجز، والرواتب غير المصروفة — عبر جرس التنبيهات 🔔.</p>
+    <div class="info-box" style="margin-top:16px">💡 <b>نصيحة:</b> فعّل المزامنة السحابية من «إعدادات الشركة» لمشاركة البيانات بين كل الأجهزة والفروع لحظياً.</div>
+  </div>`;
+};
+
+/* ================================================================
+   MODALS
+================================================================ */
+function confirmBox(title,msg,onOk){
+  const bg=document.createElement('div');bg.id='modal-bg';
+  bg.innerHTML=`<div class="modal"><h3>${title}</h3><p style="color:var(--text-2)">${msg}</p><div class="actions"><button class="btn red" id="mOk">تأكيد</button><button class="btn ghost" onclick="this.closest('#modal-bg').remove()">إلغاء</button></div></div>`;
+  document.body.appendChild(bg);bg.querySelector('#mOk').onclick=()=>{bg.remove();onOk();};bg.onclick=e=>{if(e.target===bg)bg.remove();};
+}
+function promptBox(title,def,onOk){
+  const bg=document.createElement('div');bg.id='modal-bg';
+  bg.innerHTML=`<div class="modal"><h3>${title}</h3><div class="field"><input id="mIn" value="${def||''}"></div><div class="actions"><button class="btn" id="mOk">حفظ</button><button class="btn ghost" onclick="this.closest('#modal-bg').remove()">إلغاء</button></div></div>`;
+  document.body.appendChild(bg);const inp=bg.querySelector('#mIn');inp.focus();inp.select();
+  bg.querySelector('#mOk').onclick=()=>{const v=inp.value.trim();bg.remove();onOk(v);};
+  inp.onkeydown=e=>{if(e.key==='Enter'){bg.querySelector('#mOk').click();}};bg.onclick=e=>{if(e.target===bg)bg.remove();};
+}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.tb-ctrl')&&!e.target.closest('.icon-btn')){document.getElementById('notifPanel')?.classList.add('hidden');document.getElementById('userMenu')?.classList.add('hidden');}});
+
+/* ================================================================
+   INIT
+================================================================ */
+load(); applyBranding();
+(function initCloud(){ try{ const c=localStorage.getItem(FB_CFG_KEY); if(c&&window.firebase){ startCloud(JSON.parse(c),false); } }catch(e){} updateCloudBadge(); })();
+</script>
+</body>
+</html>
